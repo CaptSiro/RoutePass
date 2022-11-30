@@ -6,20 +6,24 @@
 
   
   
-  $router->post("/user/id-:id~:name", [function ($req, $res) {
+  $router->get("/user/id-:id~name:name", [function ($req, $res) {
     echo("Hello user: " . $req->param->id . " with name: " . $req->param->name);
     exit;
-  }], ["id" => "([0-9]+)", "name" => "([a-z_]*)"]);
+  }], ["id" => Router::REG_NUMBER, "name" => Router::REG_WORD]);
   
-  $router->post("/user/id-:id", [function ($req, $res) {
-    echo("Hello user (2): " . $req->param->id);
+  $router->get("/user", [function ($req, $res) {
+    echo("Welcome to user");
     exit;
-  }], ["id" => "([0-9]+)"]);
+  }], ["id" => Router::REG_NUMBER]);
 
+  $router->get("/book/:bookID\\book", [function ($req, $res) {
+    echo("Getting book: " . $req->param->bookID);
+    exit;
+  }], ["bookID" => Router::REG_NUMBER]);
 
   $router->get("/files/:fileName", [function ($req, $res) {
     echo("getting file: " . $req->param->fileName);
-  }], ["fileName" => "(.*)"]);
+  }], ["fileName" => Router::REG_ANY]);
 
 
 

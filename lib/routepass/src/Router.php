@@ -7,9 +7,15 @@
   require_once __DIR__ . "/../../rekves/src/Response.php";
 
   class Router implements INode {
-    public static function strictParams (string $uri, array $paramMap) {
-
-    }
+    /** Try to avoid using as much as possible. May cause problems with `'internal param break character'` (characters that are not considered as valid param name. `/user/:user-id` interpreted as `/user/{space for 'user' parameter}-id`) */
+    const REG_ANY = "(.*)";
+    const REG_NUMBER = "([0-9]+)";
+    const REG_WORD = "([a-zA-Z]+)";
+    const REG_WORD_UPPER = "([A-Z]+)";
+    const REG_WORD_LOWER = "([a-z]+)";
+    const REG_SENTENCE = "([a-zA-Z_]+)";
+    const REG_SENTENCE_UPPER = "([A-Z_]+)";
+    const REG_SENTENCE_LOWER = "([a-z_]+)";
 
     private $home;
 
