@@ -15,8 +15,8 @@
       $format = "/^";
       $param = "";
       $doAppendToParam = false;
-      for ($i = 0; $i < strlen($uriPart); $i++) { 
-        if ($uriPart[$i] == "-" || $uriPart[$i] == "." || $uriPart[$i] == "~") {
+      for ($i = 0; $i < strlen($uriPart); $i++) {
+        if ($uriPart[$i] == "-" || $uriPart[$i] == "." || $uriPart[$i] == "~" || $uriPart[$i] == "\\") {
           if ($param !== "") {
             if (isset($paramCaptureGroupMap[$param])) {
               $format .= $paramCaptureGroupMap[$param];
@@ -27,7 +27,10 @@
             $param = "";
           }
 
-          $format .= $uriPart[$i];
+          if ($uriPart[$i] != "\\") {
+            $format .= $uriPart[$i];
+          }
+          $doAppendToParam = false;
           continue;
         }
 
@@ -75,14 +78,14 @@
         return;
       }
 
-      [$r] = self::createParamFormat($part, $paramCaptureGroupMap);
-      if (isset($this->parametric[$r])) {
-        $this->parametric[$r]->assign($httpMethod, $uriParts, $callbacks);
+      [$regex, $dict] = self::createParamFormat($part, $paramCaptureGroupMap);
+      if (isset($this->parametric[$regex])) {
+        $this->parametric[$regex]->assign($httpMethod, $uriParts, $callbacks);
         return;
       }
       
       //* create new end point
-
+      
       if (strpos($part, ":") === false) {
         //* static
         $node = new PathNode();
@@ -94,7 +97,6 @@
       //* parametric
       $node = new ParametricPathNode();
       $node->assign($httpMethod, $uriParts, $callbacks);
-      [$regex, $dict] = self::createParamFormat($part, $paramCaptureGroupMap);
       $this->parametric[$regex] = $node;
       $node->paramDictionary = $dict;
     }
