@@ -126,7 +126,8 @@
     }
     public function head (string $uriPattern, array $callbacks, array $paramCaptureGroupMap = []) {
       $parsedURI = self::filterEmpty(explode("/", $uriPattern));
-      $this->assign("HEAD", $parsedURI, $callbacks, $paramCaptureGroupMap);
+      $m = "HEAD";
+      $this->assign($m, $parsedURI, $callbacks, $paramCaptureGroupMap);
     }
     public function post (string $uriPattern, array $callbacks, array $paramCaptureGroupMap = []) {
       $parsedURI = self::filterEmpty(explode("/", $uriPattern));
@@ -135,27 +136,33 @@
     }
     public function put (string $uriPattern, array $callbacks, array $paramCaptureGroupMap = []) {
       $parsedURI = self::filterEmpty(explode("/", $uriPattern));
-      $this->assign("PUT", $parsedURI, $callbacks, $paramCaptureGroupMap);
+      $m = "PUT";
+      $this->assign($m, $parsedURI, $callbacks, $paramCaptureGroupMap);
     }
     public function delete (string $uriPattern, array $callbacks, array $paramCaptureGroupMap = []) {
       $parsedURI = self::filterEmpty(explode("/", $uriPattern));
-      $this->assign("DELETE", $parsedURI, $callbacks, $paramCaptureGroupMap);
+      $m = "DELETE";
+      $this->assign($m, $parsedURI, $callbacks, $paramCaptureGroupMap);
     }
     public function connect (string $uriPattern, array $callbacks, array $paramCaptureGroupMap = []) {
       $parsedURI = self::filterEmpty(explode("/", $uriPattern));
-      $this->assign("CONNECT", $parsedURI, $callbacks, $paramCaptureGroupMap);
+      $m = "CONNECT";
+      $this->assign($m, $parsedURI, $callbacks, $paramCaptureGroupMap);
     }
     public function options (string $uriPattern, array $callbacks, array $paramCaptureGroupMap = []) {
       $parsedURI = self::filterEmpty(explode("/", $uriPattern));
-      $this->assign("OPTIONS", $parsedURI, $callbacks, $paramCaptureGroupMap);
+      $m = "OPTIONS";
+      $this->assign($m, $parsedURI, $callbacks, $paramCaptureGroupMap);
     }
     public function trace (string $uriPattern, array $callbacks, array $paramCaptureGroupMap = []) {
       $parsedURI = self::filterEmpty(explode("/", $uriPattern));
-      $this->assign("TRACE", $parsedURI, $callbacks, $paramCaptureGroupMap);
+      $m = "TRACE";
+      $this->assign($m, $parsedURI, $callbacks, $paramCaptureGroupMap);
     }
     public function patch (string $uriPattern, array $callbacks, array $paramCaptureGroupMap = []) {
       $parsedURI = self::filterEmpty(explode("/", $uriPattern));
-      $this->assign("PATCH", $parsedURI, $callbacks, $paramCaptureGroupMap);
+      $m = "PATCH";
+      $this->assign($m, $parsedURI, $callbacks, $paramCaptureGroupMap);
     }
   }
 ?>
