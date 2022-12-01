@@ -8,24 +8,23 @@
     // dict
     //   id => "([0-9]+)"
     //   name => "([a-z_]+)"
-    public static function createParamFormat (string $uriPart, array $paramCaptureGroupMap = []) {
+    public static function createParamFormat (string $uriPart, array $paramCaptureGroupMap = []): array {
       $dict = [];
       $dictI = 1;
 
       $format = "/^";
       $param = "";
+      $registerParam = function () use (&$format, &$param, &$paramCaptureGroupMap, &$dict, &$dictI) {
+        if ($param !== "") {
+          $format .= $paramCaptureGroupMap[$param] ?? "([^-.~]+)";
+          $dict[$dictI++] = $param;
+          $param = "";
+        }
+      };
       $doAppendToParam = false;
       for ($i = 0; $i < strlen($uriPart); $i++) {
         if ($uriPart[$i] == "-" || $uriPart[$i] == "." || $uriPart[$i] == "~" || $uriPart[$i] == "\\") {
-          if ($param !== "") {
-            if (isset($paramCaptureGroupMap[$param])) {
-              $format .= $paramCaptureGroupMap[$param];
-            } else {
-              $format .= "([^-.~]+)";
-            }
-            $dict[$dictI++] = $param;
-            $param = "";
-          }
+          $registerParam();
 
           if ($uriPart[$i] != "\\") {
             $format .= $uriPart[$i];
@@ -35,36 +34,61 @@
         }
 
         if ($uriPart[$i] == ":") {
+          $registerParam();
           $doAppendToParam = true;
           continue;
         }
 
         ${$doAppendToParam ? "param" : "format"} .= $uriPart[$i];
       }
-
-      if ($param !== "") {
-        if (isset($paramCaptureGroupMap[$param])) {
-          $format .= $paramCaptureGroupMap[$param];
-        } else {
-          $format .= "([^-.~]+)";
-        }
-        $dict[$dictI++] = $param;
-        $param = "";
-      }
-
+  
+      $registerParam();
       $format .= "$/";
 
       return [$format, $dict];
     }
 
+    
+    
     public $static = [];
     public $parametric = [];
     public $handles = [];
 
-    public function createPath (array $uriParts): INode {
-      return new PathNode();
+    
+    
+    public function createPath (array $uriParts, array &$paramCaptureGroupMap = []): INode {
+      if (empty($uriParts)) {
+        return $this;
+      }
+  
+      $part = array_shift($uriParts);
+  
+      if (isset($this->static[$part])) {
+        return $this->static[$part]->createPath($uriParts, $paramCaptureGroupMap);
+      }
+  
+      [$regex, $dict] = self::createParamFormat($part, $paramCaptureGroupMap);
+      if (isset($this->parametric[$regex])) {
+        return $this->parametric[$regex]->createPath($uriParts, $paramCaptureGroupMap);
+      }
+  
+      //* create new end point
+      if (strpos($part, ":") === false) {
+        //* static
+        $node = new PathNode();
+        $this->static[$part] = $node;
+        return $node->createPath($uriParts, $paramCaptureGroupMap);
+      }
+  
+      //* parametric
+      $node = new ParametricPathNode();
+      $this->parametric[$regex] = $node;
+      $node->paramDictionary = $dict;
+      return $node->createPath($uriParts, $paramCaptureGroupMap);
     }
 
+    
+    
     public function assign (string &$httpMethod, array &$uriParts, array &$callbacks, array &$paramCaptureGroupMap = []) {
       if (empty($uriParts)) {
         $this->handles[$httpMethod] = $callbacks;
@@ -100,7 +124,15 @@
       $this->parametric[$regex] = $node;
       $node->paramDictionary = $dict;
     }
-
+    
+    
+    
+    public function setMethod (string &$httpMethod, array &$callbacks) {
+      $this->handles[$httpMethod] = $callbacks;
+    }
+  
+    
+  
     public function execute (array &$uri, Request &$req, Response &$res) {
       if (empty($uri)) {
         if (isset($this->handles[$_SERVER["REQUEST_METHOD"]])) {
@@ -110,7 +142,7 @@
           foreach ($this->handles[$_SERVER["REQUEST_METHOD"]] as $cb) {
             $cb($req, $res, $nextFunc);
 
-            if ($doNext == true) {
+            if ($doNext) {
               $doNext = false;
               continue;
             }
@@ -147,5 +179,3 @@
   }
 
   require_once __DIR__ . "/ParametricPathNode.php";
-
-?>

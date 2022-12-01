@@ -3,6 +3,16 @@
   require_once __DIR__ . "/lib/routepass/src/Router.php";
 
   $router = new Router();
+  $userRouter = new Router();
+  $userRouter->get("/", [function () {
+    echo "/home/user";
+    exit;
+  }]);
+  
+  $userRouter->get("/:id", [function (Request $req) {
+    echo $req->param->id;
+    exit;
+  }]);
 
   
   
@@ -24,6 +34,17 @@
   $router->get("/files/:fileName", [function ($req, $res) {
     echo("getting file: " . $req->param->fileName);
   }], ["fileName" => Router::REG_ANY]);
+
+
+  $router->get("/", [function ($req, $res) {
+      echo ("/home");
+  }]);
+  
+  
+  
+  $router->for(["GET", "POST"],"/all/:name:id/static", [function (Request $req) {
+    echo $req->param->name . ":" . $req->param->id . " hello!";
+  }], ["name" => Router::REG_WORD, "id" => Router::REG_NUMBER]);
 
 
 

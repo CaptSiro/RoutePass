@@ -80,16 +80,28 @@
     public function serve () {
       global $env;
 
+      $homeDir = "";
+      $dir = dirname($_SERVER["SCRIPT_FILENAME"]);
+
+      for ($i = 0; $i < strlen($dir); $i++) {
+          if (!(isset($_SERVER["DOCUMENT_ROOT"][$i]) && $_SERVER["DOCUMENT_ROOT"][$i] == $dir[$i])){
+              $homeDir .= $dir[$i];
+          }
+      }
+
       $res = new Response();
       $req = new Request($res);
       $req->query = self::trimQueries();
 
-      $uri = self::filterEmpty(explode("/", substr($_SERVER["REQUEST_PATH"], strlen($env->HOME_DIR))));
+      $uri = self::filterEmpty(explode("/", substr($_SERVER["REQUEST_PATH"], strlen($homeDir))));
+      var_dump($uri);
 
       $this->home->execute($uri, $req, $res);
     }
 
-    public function use (string $uri, INode $node) {}
+    public function use (string $uri, INode $node, array $paramCaptureGroupMap = []) {
+    
+    }
 
     public function assign (string &$httpMethod, array &$uriParts, array &$callbacks, array &$paramCaptureGroupMap = []) {
       if (empty($uriParts)) {
@@ -99,27 +111,38 @@
 
       $this->home->assign($httpMethod, $uriParts, $callbacks, $paramCaptureGroupMap);
     }
-
-    function execute (array &$uri, Request &$req, Response &$res) {
+    
+    public function setMethod (string &$httpMethod, array &$callbacks) {
+      $this->home->setMethod($httpMethod, $callbacks);
+    }
+  
+    public function execute (array &$uri, Request &$req, Response &$res) {
       $this->home->execute($uri, $req, $res);
     }
 
-    public function createPath (array $uriParts): INode {
-      return new PathNode();
+    public function createPath (array $uriParts, array &$paramCaptureGroupMap = []): INode {
+      return $this->home->createPath($uriParts, $paramCaptureGroupMap);
     }
 
 
 
 
     public function for (array $httpMethods, string $uriPattern, array $callbacks, array $paramCaptureGroupMap = []) {
+      $parsedURI = self::filterEmpty(explode("/", $uriPattern));
+      $lastNode = $this->createPath($parsedURI, $paramCaptureGroupMap);
+  
       foreach ($httpMethods as $method) {
-        $this->assign(strtoupper($method), explode("/", $uriPattern), $callbacks);
+        $m = strtoupper($method);
+        $lastNode->setMethod($m, $callbacks);
       }
+      var_dump($lastNode);
     }
-
     public function forAll (string $uriPattern, array $callbacks, array $paramCaptureGroupMap = []) {
+      $parsedURI = self::filterEmpty(explode("/", $uriPattern));
+      $lastNode = $this->createPath($parsedURI, $paramCaptureGroupMap);
+      
       foreach (["GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"] as $method) {
-        $this->assign(strtoupper($method), explode("/", $uriPattern), $callbacks);
+        $lastNode->setMethod($method, $callbacks);
       }
     }
 
@@ -171,4 +194,3 @@
       $this->assign($m, $parsedURI, $callbacks, $paramCaptureGroupMap);
     }
   }
-?>
