@@ -1,9 +1,9 @@
 <?php
 
-  require_once __DIR__ . "/INode.php";
+  require_once __DIR__ . "/Node.php";
   require_once __DIR__ . "/../../retval/retval.php";
 
-  class PathNode implements INode {
+  class PathNode implements Node {
     // breaking chars -.~
     // dict
     //   id => "([0-9]+)"
@@ -58,17 +58,26 @@
 
       return [$format, $dict];
     }
-
+  
+  
     
-    
+    /**
+     * @var Node[]
+     */
     public $static = [];
+    /**
+     * @var ParametricPathNode[]|Node[]
+     */
     public $parametric = [];
+    /**
+     * @var Closure[][]
+     */
     public $handles = [];
     public $parent;
-    public function getParent (): ?INode {
+    public function getParent (): ?Node {
       return $this->parent;
     }
-    public function setParent(?INode $parent) {
+    public function setParent(?Node $parent) {
       $this->parent = $parent;
     }
   
@@ -81,14 +90,14 @@
     }
   
   
-    public function __construct (string $pathPart, INode $parent) {
+    public function __construct (string $pathPart, Node $parent) {
       $this->parent = $parent;
       $this->pathPart = $pathPart;
     }
   
   
     
-    public function createPath (array $uriParts, array &$paramCaptureGroupMap = []): INode {
+    public function createPath (array $uriParts, array &$paramCaptureGroupMap = []): Node {
       if (empty($uriParts)) {
         return $this;
       }
@@ -165,14 +174,14 @@
   
     
   
-    public function execute (array &$uri, Request &$req, Response &$res) {
+    public function execute (array &$uri, Request &$request, Response &$response) {
       if (empty($uri)) {
         if (isset($this->handles[$_SERVER["REQUEST_METHOD"]])) {
           $doNext = false;
           $nextFunc = function () use (&$doNext) { $doNext = true; };
 
           foreach ($this->handles[$_SERVER["REQUEST_METHOD"]] as $cb) {
-            $cb($req, $res, $nextFunc);
+            $cb($request, $response, $nextFunc);
 
             if ($doNext) {
               $doNext = false;
@@ -190,15 +199,15 @@
 
       $part = array_shift($uri);
       if (isset($this->static[$part])) {
-        $this->static[$part]->execute($uri, $req, $res);
+        $this->static[$part]->execute($uri, $request, $response);
         return;
       }
 
       // breaking chars [-.~]
       foreach ($this->parametric as $regex => $node) {
         if (preg_match($regex, $part, $matches)) {
-          if (!isset($req->param)) {
-            $req->param = new stdClass();
+          if (!isset($request->param)) {
+            $request->param = new stdClass();
           }
           
           if ($node instanceof Router) {
@@ -210,17 +219,17 @@
             if ($param[$paramLength - 2] == "[" && $param[$paramLength - 1] == "]") {
               $shortHand = substr($param, 0, -2);
               
-              if (isset($req->param->$shortHand)) {
-                $req->param->$shortHand[] = $matches[$key];
+              if (isset($request->param->$shortHand)) {
+                $request->param->$shortHand[] = $matches[$key];
               } else {
-                $req->param->$shortHand = [$matches[$key]];
+                $request->param->$shortHand = [$matches[$key]];
               }
               continue;
             }
             
-            $req->param->$param = $matches[$key];
+            $request->param->$param = $matches[$key];
           }
-          $node->execute($uri, $req, $res);
+          $node->execute($uri, $request, $response);
           exit;
         }
       }

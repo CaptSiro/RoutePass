@@ -1,12 +1,16 @@
 <?php
-
-  require_once __DIR__ . "/lib/routepass/src/Router.php";
+  
+  require_once __DIR__ . "/lib/dotenv/dotenv.php";
+  /**
+   * @type HomeRouter $router
+   */
+  $router = require __DIR__ . "/lib/routepass/routepass.php";
 
   
   
   $userRouter = new Router();
   $userRouter->get("/", [function (Request $req) {
-    echo "/home/user" . $req->param->userID;
+    echo "/home/" . $req->param->name . $req->param->id[0];
     exit;
   }]);
   
@@ -21,8 +25,6 @@
   
   
   
-  $router = new Router();
-  
   $router->get("/book/:bookID\\book", [function ($req, $res) {
     echo("Getting book: " . $req->param->bookID);
     exit;
@@ -32,15 +34,47 @@
     echo("getting file: " . $req->param->fileName);
   }], ["fileName" => Router::REG_ANY]);
   
-  $router->get("/", [function ($req, $res) {
-      echo ("/home");
+  $router->get("/", [function () {
+      echo "<h1>Landing page.</h1>";
   }]);
   
-  $router->for(["GET", "POST"],"/all/:name:id/static", [function (Request $req) {
-    echo $req->param->name . ":" . $req->param->id . " hello!";
+  $router->for(["GET", "POST"],"/for/:name:id/static", [function (Request $req) {
+    echo $req->param->name . ":" . $req->param->id . " hello! (for)";
   }], ["name" => Router::REG_WORD, "id" => Router::REG_NUMBER]);
+  
+  $router->forAll("/all/:name:id/static", [function (Request $req) {
+    echo $req->param->name . ":" . $req->param->id . " hello! (all)";
+  }], ["name" => Router::REG_WORD, "id" => Router::REG_NUMBER]);
+  
+  
 
   $router->use("/:name-:id[]", $userRouter, ["id" => Router::REG_NUMBER]);
+  
+  
+  
+  
+  
+  $userDomainRouter = new Router();
+  
+  $userDomainRouter->get("/", [function (Request $req) {
+    echo "domain: " . $req->domain->user;
+  }]);
+  
+  $userDomainRouter->get(
+    "/:post\\_:page",
+    [function (Request $req) {
+      echo "<strong>" . $req->domain->user . "</strong> getting post: <strong>" . $req->param->post . "</strong> page(" . $req->param->page . ")";
+    }],
+    [
+      "post" => Router::REG_SENTENCE_LOWER,
+      "page" => Router::REG_NUMBER
+    ]
+  );
+  
+  $env = new Env(__DIR__ . "/.env");
+  $router->domain("[user].$env->HOST", $userDomainRouter, ["user" => Router::REG_WORD_LOWER]);
+  
+  
 
   
   
@@ -56,20 +90,3 @@
   // var_dump(explode("/", $_SERVER["REQUEST_URI"]));
 
 ?>
-<!-- <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Home</title>
-</head>
-<body>
-  <button id="fetch">Fetch</button>
-  <script>
-    document.querySelector("#fetch").addEventListener("click", evt => {
-      fetch("/routing/", {method: "PUT", body: JSON.stringify({user: 4, msg: "ping"})})
-        .then(res => res.text().then(txt => document.body.innerHTML = txt))
-    })
-  </script>
-</body>
-</html> -->

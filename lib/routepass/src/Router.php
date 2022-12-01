@@ -1,12 +1,11 @@
 <?php
 
-  require_once __DIR__ . "/../../load-env.php";
   require_once __DIR__ . "/PathNode.php";
-  require_once __DIR__ . "/INode.php";
+  require_once __DIR__ . "/Node.php";
   require_once __DIR__ . "/../../rekves/src/Request.php";
   require_once __DIR__ . "/../../rekves/src/Response.php";
 
-  class Router implements INode {
+  class Router implements Node {
     /** Try to avoid using as much as possible. May cause problems with `'internal param break character'` (characters that are not considered as valid param name. `/user/:user-id` interpreted as `/user/{space for 'user' parameter}-id`) */
     const REG_ANY = "(.*)";
     const REG_NUMBER = "([0-9]+)";
@@ -16,18 +15,33 @@
     const REG_SENTENCE = "([a-zA-Z_]+)";
     const REG_SENTENCE_UPPER = "([A-Z_]+)";
     const REG_SENTENCE_LOWER = "([a-z_]+)";
-
+  
+    protected static function filterEmpty (array $toBeFiltered) {
+      $return = [];
+      foreach ($toBeFiltered as $fragment) {
+        if ($fragment != "") {
+          $return[] = $fragment;
+        }
+      }
+    
+      return $return;
+    }
+  
     public $home;
+    /**
+     * @var Router[]
+     */
+    public $domainDictionary = [];
     private $parent;
     private $pathPart = "";
   
     /**
-     * @return INode|null
+     * @return Node|null
      */
-    public function getParent(): ?INode {
+    public function getParent(): ?Node {
       return $this->parent;
     }
-    public function setParent(?INode $parent) {
+    public function setParent(?Node $parent) {
       $this->parent = $parent;
     }
     
@@ -38,83 +52,12 @@
       $this->pathPart = $part;
     }
   
-    public function __construct (INode $parent = null) {
+    
+    
+    public function __construct (Node $parent = null) {
       $this->home = new PathNode("", $this);
       $this->parent = $parent;
     }
-
-    private static function filterEmpty (array $toBeFiltered) {
-      $return = [];
-      foreach ($toBeFiltered as $fragment) {
-        if ($fragment != "") {
-          $return[] = $fragment;
-        }
-      }
-
-      return $return;
-    }
-
-    private static function trimQueries () {
-      $uri = $_SERVER["REQUEST_URI"];
-      $_SERVER["REQUEST_PATH"] = $uri;
-      $queries = [];
-
-      $name = "";
-      $value = "";
-      $swap = false;
-      $contains = false;
-
-      for ($i = 0; $i < strlen($uri); $i++) {
-        if ($uri[$i] == "?" || $contains == true) {
-          if ($contains == false) {
-            $_SERVER["REQUEST_PATH"] = substr($uri, 0, $i);
-            $_SERVER["QUERY_STRING"] = substr($uri, $i);
-            $contains = true;
-            continue;
-          }
-
-          if ($uri[$i] == "=") {
-            $swap = true;
-            continue;
-          }
-
-          if ($uri[$i] == "&") {
-            $queries[$name] = $value;
-            $name = "";
-            $value = "";
-            $swap = false;
-            continue;
-          }
-
-          ${$swap ? "value" : "name"} .= $uri[$i];
-        }
-      }
-
-      if ($name != "") {
-        $queries[$name] = $value;
-      }
-
-      return $queries;
-    }
-
-    public function serve () {
-      $homeDir = "";
-      $dir = dirname($_SERVER["SCRIPT_FILENAME"]);
-
-      for ($i = 0; $i < strlen($dir); $i++) {
-          if (!(isset($_SERVER["DOCUMENT_ROOT"][$i]) && $_SERVER["DOCUMENT_ROOT"][$i] == $dir[$i])){
-              $homeDir .= $dir[$i];
-          }
-      }
-
-      $res = new Response();
-      $req = new Request($res);
-      $req->query = self::trimQueries();
-
-      $uri = self::filterEmpty(explode("/", substr($_SERVER["REQUEST_PATH"], strlen($homeDir))));
-      $this->home->execute($uri, $req, $res);
-    }
-
     public function use (string $uriPattern, Router $router, array $paramCaptureGroupMap = []) {
       $parsedURI = self::filterEmpty(explode("/", $uriPattern));
       $lastNode = $this->createPath($parsedURI, $paramCaptureGroupMap);
@@ -137,7 +80,6 @@
       
       $parent->static[$part] = $router;
     }
-
     public function assign (string &$httpMethod, array &$uriParts, array &$callbacks, array &$paramCaptureGroupMap = []) {
       if (empty($uriParts)) {
         $this->home->handles[$httpMethod] = $callbacks;
@@ -146,16 +88,13 @@
 
       $this->home->assign($httpMethod, $uriParts, $callbacks, $paramCaptureGroupMap);
     }
-    
     public function setMethod (string &$httpMethod, array &$callbacks) {
       $this->home->setMethod($httpMethod, $callbacks);
     }
-  
-    public function execute (array &$uri, Request &$req, Response &$res) {
-      $this->home->execute($uri, $req, $res);
+    public function execute (array &$uri, Request &$req, Response &$response) {
+      $this->home->execute($uri, $req, $response);
     }
-
-    public function createPath (array $uriParts, array &$paramCaptureGroupMap = []): INode {
+    public function createPath (array $uriParts, array &$paramCaptureGroupMap = []): Node {
       return $this->home->createPath($uriParts, $paramCaptureGroupMap);
     }
 

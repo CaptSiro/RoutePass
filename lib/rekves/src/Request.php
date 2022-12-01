@@ -47,7 +47,7 @@
 
     public $method, $host, $uri, $fullUrl, $gatewayFile, // server-url properties
     $res, // pointer to response object for this request
-    $query, $param, $body, $session, $cookies; // content Registries
+    $domain, $query, $param, $body, $session, $cookies; // content Registries
     private $headers = [];
     public function getHeader (string $field) {
       return $this->headers[strtolower($field)];
