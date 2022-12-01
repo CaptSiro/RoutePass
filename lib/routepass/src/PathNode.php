@@ -23,10 +23,21 @@
       };
       $doAppendToParam = false;
       for ($i = 0; $i < strlen($uriPart); $i++) {
-        if ($uriPart[$i] == "-" || $uriPart[$i] == "." || $uriPart[$i] == "~" || $uriPart[$i] == "\\") {
+        if ($uriPart[$i] == "-" || $uriPart[$i] == "." || $uriPart[$i] == "~" || $uriPart[$i] == "\\" || $uriPart[$i] == "[") {
+          if ($uriPart[$i] == "[" && (isset($uriPart[$i + 1]) && $uriPart[$i + 1] == "]")) {
+            if ($param !== "") {
+              $format .= $paramCaptureGroupMap[$param] ?? "([^-.~]+)";
+              $dict[$dictI++] = $param . "[]";
+              $param = "";
+            }
+            
+            $i++;
+            continue;
+          }
+          
           $registerParam();
 
-          if ($uriPart[$i] != "\\") {
+          if (($uriPart[$i] != "\\")) {
             $format .= $uriPart[$i];
           }
           $doAppendToParam = false;
@@ -53,8 +64,29 @@
     public $static = [];
     public $parametric = [];
     public $handles = [];
-
-    
+    public $parent;
+    public function getParent (): ?INode {
+      return $this->parent;
+    }
+    public function setParent(?INode $parent) {
+      $this->parent = $parent;
+    }
+  
+    public $pathPart;
+    public function getPathPart (): string{
+      return $this->pathPart;
+    }
+    public function setPathPart(string $part) {
+      $this->pathPart = $part;
+    }
+  
+  
+    public function __construct (string $pathPart, INode $parent) {
+      $this->parent = $parent;
+      $this->pathPart = $pathPart;
+    }
+  
+  
     
     public function createPath (array $uriParts, array &$paramCaptureGroupMap = []): INode {
       if (empty($uriParts)) {
@@ -75,13 +107,13 @@
       //* create new end point
       if (strpos($part, ":") === false) {
         //* static
-        $node = new PathNode();
+        $node = new PathNode($part, $this);
         $this->static[$part] = $node;
         return $node->createPath($uriParts, $paramCaptureGroupMap);
       }
   
       //* parametric
-      $node = new ParametricPathNode();
+      $node = new ParametricPathNode($regex, $this);
       $this->parametric[$regex] = $node;
       $node->paramDictionary = $dict;
       return $node->createPath($uriParts, $paramCaptureGroupMap);
@@ -112,14 +144,14 @@
       
       if (strpos($part, ":") === false) {
         //* static
-        $node = new PathNode();
+        $node = new PathNode($part, $this);
         $node->assign($httpMethod, $uriParts, $callbacks, $paramCaptureGroupMap);
         $this->static[$part] = $node;
         return;
       }
 
       //* parametric
-      $node = new ParametricPathNode();
+      $node = new ParametricPathNode($regex, $this);
       $node->assign($httpMethod, $uriParts, $callbacks);
       $this->parametric[$regex] = $node;
       $node->paramDictionary = $dict;
@@ -165,8 +197,27 @@
       // breaking chars [-.~]
       foreach ($this->parametric as $regex => $node) {
         if (preg_match($regex, $part, $matches)) {
-          $req->param = new stdClass();
+          if (!isset($req->param)) {
+            $req->param = new stdClass();
+          }
+          
+          if ($node instanceof Router) {
+            $node = $node->home;
+          }
+          
           foreach ($node->paramDictionary as $key => $param) {
+            $paramLength = strlen($param);
+            if ($param[$paramLength - 2] == "[" && $param[$paramLength - 1] == "]") {
+              $shortHand = substr($param, 0, -2);
+              
+              if (isset($req->param->$shortHand)) {
+                $req->param->$shortHand[] = $matches[$key];
+              } else {
+                $req->param->$shortHand = [$matches[$key]];
+              }
+              continue;
+            }
+            
             $req->param->$param = $matches[$key];
           }
           $node->execute($uri, $req, $res);
@@ -174,7 +225,7 @@
         }
       }
 
-      exit("End point does not exist.");
+      exit("Endpoint do not exist.");
     }
   }
 

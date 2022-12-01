@@ -17,10 +17,30 @@
     const REG_SENTENCE_UPPER = "([A-Z_]+)";
     const REG_SENTENCE_LOWER = "([a-z_]+)";
 
-    private $home;
-
-    public function __construct () {
-      $this->home = new PathNode();
+    public $home;
+    private $parent;
+    private $pathPart = "";
+  
+    /**
+     * @return INode|null
+     */
+    public function getParent(): ?INode {
+      return $this->parent;
+    }
+    public function setParent(?INode $parent) {
+      $this->parent = $parent;
+    }
+    
+    public function getPathPart(): string {
+      return $this->pathPart;
+    }
+    public function setPathPart(string $part) {
+      $this->pathPart = $part;
+    }
+  
+    public function __construct (INode $parent = null) {
+      $this->home = new PathNode("", $this);
+      $this->parent = $parent;
     }
 
     private static function filterEmpty (array $toBeFiltered) {
@@ -78,8 +98,6 @@
     }
 
     public function serve () {
-      global $env;
-
       $homeDir = "";
       $dir = dirname($_SERVER["SCRIPT_FILENAME"]);
 
@@ -94,13 +112,30 @@
       $req->query = self::trimQueries();
 
       $uri = self::filterEmpty(explode("/", substr($_SERVER["REQUEST_PATH"], strlen($homeDir))));
-      var_dump($uri);
-
       $this->home->execute($uri, $req, $res);
     }
 
-    public function use (string $uri, INode $node, array $paramCaptureGroupMap = []) {
-    
+    public function use (string $uriPattern, Router $router, array $paramCaptureGroupMap = []) {
+      $parsedURI = self::filterEmpty(explode("/", $uriPattern));
+      $lastNode = $this->createPath($parsedURI, $paramCaptureGroupMap);
+      
+      $part = $lastNode->getPathPart();
+      $parent = $lastNode->getParent();
+      $router->setPathPart($part);
+      $router->setParent($parent);
+      
+      if ($lastNode instanceof ParametricPathNode) {
+        $parent->parametric[$part] = $router;
+        if (!$router->home instanceof ParametricPathNode) {
+          $paramNode = new ParametricPathNode($part, $router);
+          $router->home = $paramNode->upgrade($router->home);
+        }
+        
+        $router->home->paramDictionary = $lastNode->paramDictionary;
+        return;
+      }
+      
+      $parent->static[$part] = $router;
     }
 
     public function assign (string &$httpMethod, array &$uriParts, array &$callbacks, array &$paramCaptureGroupMap = []) {
@@ -135,7 +170,6 @@
         $m = strtoupper($method);
         $lastNode->setMethod($m, $callbacks);
       }
-      var_dump($lastNode);
     }
     public function forAll (string $uriPattern, array $callbacks, array $paramCaptureGroupMap = []) {
       $parsedURI = self::filterEmpty(explode("/", $uriPattern));

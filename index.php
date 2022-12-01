@@ -2,30 +2,27 @@
 
   require_once __DIR__ . "/lib/routepass/src/Router.php";
 
-  $router = new Router();
+  
+  
   $userRouter = new Router();
-  $userRouter->get("/", [function () {
-    echo "/home/user";
+  $userRouter->get("/", [function (Request $req) {
+    echo "/home/user" . $req->param->userID;
     exit;
   }]);
   
-  $userRouter->get("/:id", [function (Request $req) {
-    echo $req->param->id;
-    exit;
-  }]);
-
-  
-  
-  $router->get("/user/id-:id~name:name", [function ($req, $res) {
-    echo("Hello user: " . $req->param->id . " with name: " . $req->param->name);
-    exit;
-  }], ["id" => Router::REG_NUMBER, "name" => Router::REG_WORD]);
-  
-  $router->get("/user", [function ($req, $res) {
-    echo("Welcome to user");
+  $userRouter->get("/:id[]", [function (Request $req) {
+    var_dump($req->param);
     exit;
   }], ["id" => Router::REG_NUMBER]);
-
+  
+  $userRouter->get("/static", [function () {
+    echo "/home/user/static";
+  }]);
+  
+  
+  
+  $router = new Router();
+  
   $router->get("/book/:bookID\\book", [function ($req, $res) {
     echo("Getting book: " . $req->param->bookID);
     exit;
@@ -34,24 +31,20 @@
   $router->get("/files/:fileName", [function ($req, $res) {
     echo("getting file: " . $req->param->fileName);
   }], ["fileName" => Router::REG_ANY]);
-
-
+  
   $router->get("/", [function ($req, $res) {
       echo ("/home");
   }]);
-  
-  
   
   $router->for(["GET", "POST"],"/all/:name:id/static", [function (Request $req) {
     echo $req->param->name . ":" . $req->param->id . " hello!";
   }], ["name" => Router::REG_WORD, "id" => Router::REG_NUMBER]);
 
+  $router->use("/:name-:id[]", $userRouter, ["id" => Router::REG_NUMBER]);
 
-
+  
+  
   $router->serve();
-
-
-
 
   // var_dump(json_decode(file_get_contents('php://input')));
   // var_dump($_SERVER["REQUEST_METHOD"]);

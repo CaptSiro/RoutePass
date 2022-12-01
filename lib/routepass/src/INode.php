@@ -11,4 +11,9 @@
     function assign (string &$httpMethod, array &$uriParts, array &$callbacks, array &$paramCaptureGroupMap = []);
     function setMethod (string &$httpMethod, array &$callbacks);
     function execute (array &$uri, Request &$req, Response &$res);
+    
+    function getParent (): ?INode;
+    function setParent (?INode $parent);
+    function getPathPart (): string;
+    function setPathPart (string $part);
   }
