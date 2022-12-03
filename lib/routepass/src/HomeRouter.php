@@ -1,6 +1,8 @@
 <?php
   require_once __DIR__ . "/Router.php";
   require_once __DIR__ . "/../../load-env.php";
+  require_once __DIR__ . "/Response.php";
+  require_once __DIR__ . "/../../rekves/src/Request.php";
   
   class HomeRouter extends Router {
     protected static function trimQueries () {
@@ -63,11 +65,16 @@
     protected $staticDomains = [];
     public function __construct () {
       parent::__construct();
+      
+      $this->onErrorEvent(function ($message) {
+        exit($message);
+      });
     }
   
     
     
     // [domain].host
+    // static.host
     public function domain (string $domainPattern, Router $router, $domainCaptureGroupMap = []) {
       if (strpos($domainPattern, "[") === false) {
         // static domain
@@ -113,20 +120,22 @@
       $router->setParent($this);
     }
     public function serve () {
-      $homeDir = "";
+      $home = "";
       $dir = dirname($_SERVER["SCRIPT_FILENAME"]);
     
       for ($i = 0; $i < strlen($dir); $i++) {
         if (!(isset($_SERVER["DOCUMENT_ROOT"][$i]) && $_SERVER["DOCUMENT_ROOT"][$i] == $dir[$i])){
-          $homeDir .= $dir[$i];
+          $home .= $dir[$i];
         }
       }
+      
+      $_SERVER["HOME_DIR"] = $dir;
       
       $res = new Response();
       $req = new Request($res);
       $req->query = self::trimQueries();
     
-      $uri = self::filterEmpty(explode("/", substr($_SERVER["REQUEST_PATH"], strlen($homeDir))));
+      $uri = self::filterEmpty(explode("/", substr($_SERVER["REQUEST_PATH"], strlen($home))));
       
       $req->domain = new stdClass();
       if (isset($this->staticDomains[$_SERVER["HTTP_HOST"]])) {
@@ -146,5 +155,32 @@
       }
       
       $this->home->execute($uri, $req, $res);
+    }
+    
+    
+    private $httpMethodNotImplementedHandler;
+    private $endpointDoesNotExistsHandler;
+    
+    public function onHTTPMethodNotImplemented (Closure $handler) {
+      $this->httpMethodNotImplementedHandler = $handler;
+    }
+    public function onEndpointDoesNotExists (Closure $handler) {
+      $this->endpointDoesNotExistsHandler = $handler;
+    }
+    public function onErrorEvent (Closure $handler) {
+      $this->onHTTPMethodNotImplemented($handler);
+      $this->onEndpointDoesNotExists($handler);
+    }
+    public function httpMethodNotImplemented (Request $request, Response $response) {
+      $this->httpMethodNotImplementedHandler->call($this, "HTTP method: '$_SERVER[REQUEST_METHOD]' is not implemented for '$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]'", $request, $response);
+      exit;
+    }
+    public function endpointDoesNotExists (Request $request, Response $response) {
+      $this->endpointDoesNotExistsHandler->call($this, "Endpoint does not exist for '$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]'", $request, $response);
+      exit;
+    }
+    
+    public function setViewDirectory ($directory) {
+      $_SERVER["VIEW_DIR"] = $directory;
     }
   }

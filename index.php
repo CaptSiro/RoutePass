@@ -5,6 +5,10 @@
    * @type HomeRouter $router
    */
   $router = require __DIR__ . "/lib/routepass/routepass.php";
+  $router->setViewDirectory(__DIR__ . "/views");
+  $router->onErrorEvent(function (string $message, Request $request, Response $response) {
+    $response->render("error", ["message" => $message]);
+  });
 
   
   
@@ -36,8 +40,8 @@
     echo("getting file: " . $req->param->fileName);
   }], ["fileName" => Router::REG_ANY]);
   
-  $router->get("/", [function () {
-      echo "<h1>Landing page.</h1>";
+  $router->get("/", [function (Request $request, Response $response) {
+    $response->render("index", ["name" => "John"]);
   }]);
   
   $router->for(["GET", "POST"],"/for/:name:id/static", [function (Request $req) {
@@ -81,7 +85,7 @@
   
   
   $staticRouter = new Router();
-  $staticRouter->get("/", [function () {
+  $staticRouter->post("/", [function () {
     echo "static domain router";
   }]);
   $router->domain("static.$env->HOST", $staticRouter);

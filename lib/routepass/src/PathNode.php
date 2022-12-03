@@ -178,8 +178,11 @@
           return;
         }
 
-        var_dump($this->handles);
-        exit("$_SERVER[REQUEST_METHOD] is not implemented.");
+        /**
+         * @var HomeRouter $homeRouter
+         */
+        $homeRouter = $this->getRootParent();
+        $homeRouter->httpMethodNotImplemented($request, $response);
       }
 
       $part = array_shift($uri);
@@ -218,8 +221,12 @@
           exit;
         }
       }
-
-      exit("Endpoint do not exist.");
+  
+      /**
+       * @var HomeRouter $homeRouter
+       */
+      $homeRouter = $this->getRootParent();
+      $homeRouter->endpointDoesNotExists($request, $response);
     }
   }
 

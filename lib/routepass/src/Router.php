@@ -2,8 +2,6 @@
 
   require_once __DIR__ . "/PathNode.php";
   require_once __DIR__ . "/Node.php";
-  require_once __DIR__ . "/../../rekves/src/Request.php";
-  require_once __DIR__ . "/../../rekves/src/Response.php";
 
   class Router extends Node {
     /** Try to avoid using as much as possible. May cause problems with `'internal param break character'` (characters that are not considered as valid param name. `/user/:user-id` interpreted as `/user/{space for 'user' parameter}-id`) */
@@ -71,8 +69,8 @@
     protected function setMethod (string &$httpMethod, array &$callbacks) {
       $this->home->setMethod($httpMethod, $callbacks);
     }
-    protected function execute (array &$uri, Request &$req, Response &$response) {
-      $this->home->execute($uri, $req, $response);
+    protected function execute (array &$uri, Request &$request, Response &$response) {
+      $this->home->execute($uri, $request, $response);
     }
     public function createPath (array $uriParts, array &$paramCaptureGroupMap = []): Node {
       return $this->home->createPath($uriParts, $paramCaptureGroupMap);
