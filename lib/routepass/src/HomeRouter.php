@@ -58,7 +58,9 @@
     
     
     /** @var Router[]  */
-    protected $domains = [];
+    protected $parametricDomains = [];
+    /** @var Router[]  */
+    protected $staticDomains = [];
     public function __construct () {
       parent::__construct();
     }
@@ -67,40 +69,48 @@
     
     // [domain].host
     public function domain (string $domainPattern, Router $router, $domainCaptureGroupMap = []) {
-      $dictI = 1;
-      $dict = [];
-      
-      $domain = "";
-      $format = "/^";
-      $registerDomain = function () use (&$format, &$domain, &$domainCaptureGroupMap, &$dict, &$dictI) {
-        if ($domain !== "") {
-          $format .= $domainCaptureGroupMap[$domain] ?? "([^-.~]+)";
-          $dict[$dictI++] = $domain;
-          $domain = "";
-        }
-      };
-      
-      $doAppendToDomain = false;
-      for ($i = 0; $i < strlen($domainPattern); $i++) {
-        if ($domainPattern[$i] == "[") {
-          $doAppendToDomain = true;
-          continue;
+      if (strpos($domainPattern, "[") === false) {
+        // static domain
+        $this->staticDomains[$domainPattern] = $router;
+      } else {
+        // parametric domain
+        $dictI = 1;
+        $dict = [];
+  
+        $domain = "";
+        $format = "/^";
+        $registerDomain = function () use (&$format, &$domain, &$domainCaptureGroupMap, &$dict, &$dictI) {
+          if ($domain !== "") {
+            $format .= $domainCaptureGroupMap[$domain] ?? "([^-.~]+)";
+            $dict[$dictI++] = $domain;
+            $domain = "";
+          }
+        };
+  
+        $doAppendToDomain = false;
+        for ($i = 0; $i < strlen($domainPattern); $i++) {
+          if ($domainPattern[$i] == "[") {
+            $doAppendToDomain = true;
+            continue;
+          }
+    
+          if ($domainPattern[$i] == "]") {
+            $registerDomain();
+            $doAppendToDomain = false;
+            continue;
+          }
+    
+          ${$doAppendToDomain ? "domain" : "format"} .= $domainPattern[$i];
         }
   
-        if ($domainPattern[$i] == "]") {
-          $registerDomain();
-          $doAppendToDomain = false;
-          continue;
-        }
+        $registerDomain();
+        $format .= "$/";
   
-        ${$doAppendToDomain ? "domain" : "format"} .= $domainPattern[$i];
+        $this->parametricDomains[$format] = $router;
+        $router->domainDictionary = $dict;
       }
-  
-      $registerDomain();
-      $format .= "$/";
       
-      $this->domains[$format] = $router;
-      $router->domainDictionary = $dict;
+      $router->setParent($this);
     }
     public function serve () {
       $homeDir = "";
@@ -119,12 +129,17 @@
       $uri = self::filterEmpty(explode("/", substr($_SERVER["REQUEST_PATH"], strlen($homeDir))));
       
       $req->domain = new stdClass();
-      foreach ($this->domains as $regex => $domainRouter) {
+      if (isset($this->staticDomains[$_SERVER["HTTP_HOST"]])) {
+        $this->staticDomains[$_SERVER["HTTP_HOST"]]->execute($uri, $req, $res);
+        exit;
+      }
+      
+      foreach ($this->parametricDomains as $regex => $domainRouter) {
         if (preg_match($regex, $_SERVER["HTTP_HOST"], $matches)) {
           foreach ($domainRouter->domainDictionary as $key => $domain) {
             $req->domain->$domain = $matches[$key];
           }
-          
+    
           $domainRouter->execute($uri, $req, $res);
           exit;
         }

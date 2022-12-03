@@ -25,6 +25,8 @@
   
   
   
+  
+  
   $router->get("/book/:bookID\\book", [function ($req, $res) {
     echo("Getting book: " . $req->param->bookID);
     exit;
@@ -73,6 +75,16 @@
   
   $env = new Env(__DIR__ . "/.env");
   $router->domain("[user].$env->HOST", $userDomainRouter, ["user" => Router::REG_WORD_LOWER]);
+  
+  
+  
+  
+  
+  $staticRouter = new Router();
+  $staticRouter->get("/", [function () {
+    echo "static domain router";
+  }]);
+  $router->domain("static.$env->HOST", $staticRouter);
   
   
 

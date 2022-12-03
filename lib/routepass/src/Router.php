@@ -5,7 +5,7 @@
   require_once __DIR__ . "/../../rekves/src/Request.php";
   require_once __DIR__ . "/../../rekves/src/Response.php";
 
-  class Router implements Node {
+  class Router extends Node {
     /** Try to avoid using as much as possible. May cause problems with `'internal param break character'` (characters that are not considered as valid param name. `/user/:user-id` interpreted as `/user/{space for 'user' parameter}-id`) */
     const REG_ANY = "(.*)";
     const REG_NUMBER = "([0-9]+)";
@@ -32,26 +32,6 @@
      * @var Router[]
      */
     public $domainDictionary = [];
-    private $parent;
-    private $pathPart = "";
-  
-    /**
-     * @return Node|null
-     */
-    public function getParent(): ?Node {
-      return $this->parent;
-    }
-    public function setParent(?Node $parent) {
-      $this->parent = $parent;
-    }
-    
-    public function getPathPart(): string {
-      return $this->pathPart;
-    }
-    public function setPathPart(string $part) {
-      $this->pathPart = $part;
-    }
-  
     
     
     public function __construct (Node $parent = null) {
@@ -80,7 +60,7 @@
       
       $parent->static[$part] = $router;
     }
-    public function assign (string &$httpMethod, array &$uriParts, array &$callbacks, array &$paramCaptureGroupMap = []) {
+    protected function assign (string &$httpMethod, array &$uriParts, array &$callbacks, array &$paramCaptureGroupMap = []) {
       if (empty($uriParts)) {
         $this->home->handles[$httpMethod] = $callbacks;
         return;
@@ -88,10 +68,10 @@
 
       $this->home->assign($httpMethod, $uriParts, $callbacks, $paramCaptureGroupMap);
     }
-    public function setMethod (string &$httpMethod, array &$callbacks) {
+    protected function setMethod (string &$httpMethod, array &$callbacks) {
       $this->home->setMethod($httpMethod, $callbacks);
     }
-    public function execute (array &$uri, Request &$req, Response &$response) {
+    protected function execute (array &$uri, Request &$req, Response &$response) {
       $this->home->execute($uri, $req, $response);
     }
     public function createPath (array $uriParts, array &$paramCaptureGroupMap = []): Node {

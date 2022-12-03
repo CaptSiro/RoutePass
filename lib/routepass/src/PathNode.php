@@ -3,7 +3,7 @@
   require_once __DIR__ . "/Node.php";
   require_once __DIR__ . "/../../retval/retval.php";
 
-  class PathNode implements Node {
+  class PathNode extends Node {
     // breaking chars -.~
     // dict
     //   id => "([0-9]+)"
@@ -73,21 +73,6 @@
      * @var Closure[][]
      */
     public $handles = [];
-    public $parent;
-    public function getParent (): ?Node {
-      return $this->parent;
-    }
-    public function setParent(?Node $parent) {
-      $this->parent = $parent;
-    }
-  
-    public $pathPart;
-    public function getPathPart (): string{
-      return $this->pathPart;
-    }
-    public function setPathPart(string $part) {
-      $this->pathPart = $part;
-    }
   
   
     public function __construct (string $pathPart, Node $parent) {
@@ -130,7 +115,7 @@
 
     
     
-    public function assign (string &$httpMethod, array &$uriParts, array &$callbacks, array &$paramCaptureGroupMap = []) {
+    protected function assign (string &$httpMethod, array &$uriParts, array &$callbacks, array &$paramCaptureGroupMap = []) {
       if (empty($uriParts)) {
         $this->handles[$httpMethod] = $callbacks;
         return;
@@ -168,13 +153,13 @@
     
     
     
-    public function setMethod (string &$httpMethod, array &$callbacks) {
+    protected function setMethod (string &$httpMethod, array &$callbacks) {
       $this->handles[$httpMethod] = $callbacks;
     }
   
     
   
-    public function execute (array &$uri, Request &$request, Response &$response) {
+    protected function execute (array &$uri, Request &$request, Response &$response) {
       if (empty($uri)) {
         if (isset($this->handles[$_SERVER["REQUEST_METHOD"]])) {
           $doNext = false;
