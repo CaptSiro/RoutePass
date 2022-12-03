@@ -194,10 +194,6 @@
       // breaking chars [-.~]
       foreach ($this->parametric as $regex => $node) {
         if (preg_match($regex, $part, $matches)) {
-          if (!isset($request->param)) {
-            $request->param = new stdClass();
-          }
-          
           if ($node instanceof Router) {
             $node = $node->home;
           }
@@ -207,15 +203,18 @@
             if ($param[$paramLength - 2] == "[" && $param[$paramLength - 1] == "]") {
               $shortHand = substr($param, 0, -2);
               
-              if (isset($request->param->$shortHand)) {
-                $request->param->$shortHand[] = $matches[$key];
+              if ($request->param->isset($shortHand)) {
+                $request->param->modify($shortHand, function ($value) use ($matches, $key) {
+                  $value[] = $matches[$key];
+                  return $value;
+                });
               } else {
-                $request->param->$shortHand = [$matches[$key]];
+                $request->param->set($shortHand, [$matches[$key]]);
               }
               continue;
             }
             
-            $request->param->$param = $matches[$key];
+            $request->param->set($param, $matches[$key]);
           }
           $node->execute($uri, $request, $response);
           exit;

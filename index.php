@@ -14,12 +14,12 @@
   
   $userRouter = new Router();
   $userRouter->get("/", [function (Request $req) {
-    echo "/home/" . $req->param->name . $req->param->id[0];
+    echo "/home/" . $req->param->get("name") . $req->param->get("id")[0];
     exit;
   }]);
   
   $userRouter->get("/:id[]", [function (Request $req) {
-    var_dump($req->param);
+    var_dump($req->param->get("id"));
     exit;
   }], ["id" => Router::REG_NUMBER]);
   
@@ -32,12 +32,12 @@
   
   
   $router->get("/book/:bookID\\book", [function ($req, $res) {
-    echo("Getting book: " . $req->param->bookID);
+    echo("Getting book: " . $req->param->get("bookID"));
     exit;
   }], ["bookID" => Router::REG_NUMBER]);
 
   $router->get("/files/:fileName", [function ($req, $res) {
-    echo("getting file: " . $req->param->fileName);
+    echo("getting file: " . $req->param->get("fileName"));
   }], ["fileName" => Router::REG_ANY]);
   
   $router->get("/", [function (Request $request, Response $response) {
@@ -45,11 +45,11 @@
   }]);
   
   $router->for(["GET", "POST"],"/for/:name:id/static", [function (Request $req) {
-    echo $req->param->name . ":" . $req->param->id . " hello! (for)";
+    echo $req->param->get("name") . ":" . $req->param->get("id") . " hello! (for)";
   }], ["name" => Router::REG_WORD, "id" => Router::REG_NUMBER]);
   
   $router->forAll("/all/:name:id/static", [function (Request $req) {
-    echo $req->param->name . ":" . $req->param->id . " hello! (all)";
+    echo $req->param->get("name") . ":" . $req->param->get("id") . " hello! (all)";
   }], ["name" => Router::REG_WORD, "id" => Router::REG_NUMBER]);
   
   
@@ -63,13 +63,13 @@
   $userDomainRouter = new Router();
   
   $userDomainRouter->get("/", [function (Request $req) {
-    echo "domain: " . $req->domain->user;
+    echo "domain: " . $req->domain->get("user");
   }]);
   
   $userDomainRouter->get(
     "/:post\\_:page",
     [function (Request $req) {
-      echo "<strong>" . $req->domain->user . "</strong> getting post: <strong>" . $req->param->post . "</strong> page(" . $req->param->page . ")";
+      echo "<strong>" . $req->domain->get("user") . "</strong> getting post: <strong>" . $req->param->get("post") . "</strong> page(" . $req->param->get("page") . ")";
     }],
     [
       "post" => Router::REG_SENTENCE_LOWER,

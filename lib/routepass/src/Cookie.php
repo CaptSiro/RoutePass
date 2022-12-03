@@ -1,8 +1,8 @@
 <?php
 
   class Cookie {
-    public $value, $expire, $path, $domain, $secure, $httpOnly;
-
+    public $value, $expires, $path, $domain, $secure, $httpOnly;
+  
     public function __construct (
       $value = "",
       int $expires = 0,
@@ -18,7 +18,7 @@
       $this->secure = $secure;
       $this->httpOnly = $httpOnly;
     }
-
+  
     public function set ($name) {
       setcookie(
         $name,

@@ -2,52 +2,9 @@
   require_once __DIR__ . "/Router.php";
   require_once __DIR__ . "/../../load-env.php";
   require_once __DIR__ . "/Response.php";
-  require_once __DIR__ . "/../../rekves/src/Request.php";
+  require_once __DIR__ . "/Request.php";
   
   class HomeRouter extends Router {
-    protected static function trimQueries () {
-      $uri = $_SERVER["REQUEST_URI"];
-      $_SERVER["REQUEST_PATH"] = $uri;
-      $query = [];
-    
-      $name = "";
-      $value = "";
-      $swap = false;
-      $contains = false;
-    
-      for ($i = 0; $i < strlen($uri); $i++) {
-        if ($uri[$i] == "?" || $contains == true) {
-          if ($contains == false) {
-            $_SERVER["REQUEST_PATH"] = substr($uri, 0, $i);
-            $_SERVER["QUERY_STRING"] = substr($uri, $i);
-            $contains = true;
-            continue;
-          }
-        
-          if ($uri[$i] == "=") {
-            $swap = true;
-            continue;
-          }
-        
-          if ($uri[$i] == "&") {
-            $query[$name] = $value;
-            $name = "";
-            $value = "";
-            $swap = false;
-            continue;
-          }
-        
-          ${$swap ? "value" : "name"} .= $uri[$i];
-        }
-      }
-    
-      if ($name != "") {
-        $query[$name] = $value;
-      }
-    
-      return $query;
-    }
-    
     private static $instance;
     public static function getInstance (): HomeRouter {
       if (!isset(self::$instance)) {
@@ -133,11 +90,10 @@
       
       $res = new Response();
       $req = new Request($res);
-      $req->query = self::trimQueries();
     
+      $req->trimQueries();
       $uri = self::filterEmpty(explode("/", substr($_SERVER["REQUEST_PATH"], strlen($home))));
       
-      $req->domain = new stdClass();
       if (isset($this->staticDomains[$_SERVER["HTTP_HOST"]])) {
         $this->staticDomains[$_SERVER["HTTP_HOST"]]->execute($uri, $req, $res);
         exit;
@@ -146,7 +102,7 @@
       foreach ($this->parametricDomains as $regex => $domainRouter) {
         if (preg_match($regex, $_SERVER["HTTP_HOST"], $matches)) {
           foreach ($domainRouter->domainDictionary as $key => $domain) {
-            $req->domain->$domain = $matches[$key];
+            $req->domain->set($domain, $matches[$key]);
           }
     
           $domainRouter->execute($uri, $req, $res);
