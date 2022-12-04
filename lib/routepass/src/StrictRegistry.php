@@ -29,9 +29,7 @@
         return $this->optionallyDeserializeValue($this->__map[$propertyName]);
       }
     
-      return (isset($default))
-        ? $default
-        : null;
+      return $default;
     }
     public function get ($propertyName) {
       if (!$this->isset($propertyName)) {

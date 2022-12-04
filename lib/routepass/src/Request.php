@@ -2,6 +2,7 @@
   
   require_once __DIR__ . "/WriteRegistry.php";
   require_once __DIR__ . "/Cookie.php";
+  require_once __DIR__ . "/File.php";
 
   class Request {
     static function POST ($url, array $post = NULL, array $options = []) {
@@ -40,26 +41,60 @@
       curl_close($chandler);
       return $result;
     }
+  
+    public static function parseURLEncoded (string $query, StrictRegistry &$registry) {
+      $name = "";
+      $value = "";
+      $swap = false;
+      
+      for ($i = 0; $i < strlen($query); $i++) {
+        if ($query[$i] == "=") {
+          $swap = true;
+          continue;
+        }
+      
+        if ($query[$i] == "&") {
+          $registry->set($name, urldecode($value));
+          $name = "";
+          $value = "";
+          $swap = false;
+          continue;
+        }
+      
+        ${$swap ? "value" : "name"} .= $query[$i];
+      }
+    
+      if ($name != "") {
+        $registry->set($name, urldecode($value));
+      }
+    }
     
     public $httpMethod,
       $host,
       $uri,
       $fullURI,
       $response,
+      $homeRouter,
       $domain,
+      /**
+       * **Only accessible with POST HTTP method**
+       * @var RequestRegistry $files
+       */
+      $files,
       $query,
       $param,
-      /** @var RequestRegistry|string $body */
+      /** @var RequestRegistry $body */
       $body,
       $session,
       $cookies;
     private $headers;
-    public function getHeader ($header) {
-      return $this->headers[strtolower($header)];
+    public function getHeader ($header): string {
+      return $this->headers[strtolower($header)] ?? "";
     }
     
-    public function __construct (Response &$response) {
+    public function __construct (Response &$response, HomeRouter &$homeRouter) {
       $this->response = $response;
+      $this->homeRouter = $homeRouter;
       $this->httpMethod = $_SERVER["REQUEST_METHOD"];
       $this->host = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
           ? "https"
@@ -72,9 +107,6 @@
       array_walk($temp, function ($value, $key) {
         $this->headers[strtolower($key)] = $value;
       });
-      
-      //TODO implement body -> HomeRouter::acceptType()
-      $this->body = "body";
   
       if (session_status() == PHP_SESSION_NONE) {
         session_start();
@@ -97,6 +129,11 @@
       $this->cookies->enableSerializedValues();
       $this->cookies->load($_COOKIE);
       
+      $this->files = new RequestRegistry($this);
+      foreach ($_FILES as $key => $file) {
+        $this->files->set($key, new File($file));
+      }
+      
       $this->param = new RequestRegistry($this);
       $this->domain = new RequestRegistry($this);
       $this->query = new RequestRegistry($this);
@@ -105,40 +142,26 @@
     public function trimQueries () {
       $uri = $_SERVER["REQUEST_URI"];
       $_SERVER["REQUEST_PATH"] = $uri;
-    
-      $name = "";
-      $value = "";
-      $swap = false;
-      $contains = false;
-    
+      
+      $query = "";
+      $path = "";
+      $swap = true;
       for ($i = 0; $i < strlen($uri); $i++) {
-        if ($uri[$i] == "?" || $contains) {
-          if (!$contains) {
-            $_SERVER["REQUEST_PATH"] = substr($uri, 0, $i);
-            $_SERVER["QUERY_STRING"] = substr($uri, $i);
-            $contains = true;
-            continue;
-          }
+        if ($uri[$i] == "?") {
+          $swap = false;
+          continue;
+        }
         
-          if ($uri[$i] == "=") {
-            $swap = true;
-            continue;
-          }
-        
-          if ($uri[$i] == "&") {
-            $this->query->set($name, $value);
-            $name = "";
-            $value = "";
-            $swap = false;
-            continue;
-          }
-        
-          ${$swap ? "value" : "name"} .= $uri[$i];
+        if ($swap) {
+          $path .= $uri[$i];
+        } else {
+          $query .= $uri[$i];
         }
       }
+  
+      $_SERVER["REQUEST_PATH"] = $path;
+      $_SERVER["QUERY_STRING"] = $query;
     
-      if ($name != "") {
-        $this->query->set($name, $value);
-      }
+      self::parseURLEncoded($query, $this->query);
     }
   }

@@ -26,6 +26,7 @@
       $this->onErrorEvent(function ($message) {
         exit($message);
       });
+      $this->setBodyParser(self::BODY_PARSER_URLENCODED());
     }
   
     
@@ -89,7 +90,8 @@
       $_SERVER["HOME_DIR"] = $dir;
       
       $res = new Response();
-      $req = new Request($res);
+      $req = new Request($res, $this);
+      $this->bodyParser->call($this, file_get_contents('php://input'), $req);
     
       $req->trimQueries();
       $uri = self::filterEmpty(explode("/", substr($_SERVER["REQUEST_PATH"], strlen($home))));
@@ -116,6 +118,7 @@
     
     private $httpMethodNotImplementedHandler;
     private $endpointDoesNotExistsHandler;
+    private $propertyNotFoundHandler;
     
     public function onHTTPMethodNotImplemented (Closure $handler) {
       $this->httpMethodNotImplementedHandler = $handler;
@@ -123,9 +126,13 @@
     public function onEndpointDoesNotExists (Closure $handler) {
       $this->endpointDoesNotExistsHandler = $handler;
     }
+    public function onPropertyNotFound (Closure $handler) {
+      $this->propertyNotFoundHandler = $handler;
+    }
     public function onErrorEvent (Closure $handler) {
       $this->onHTTPMethodNotImplemented($handler);
       $this->onEndpointDoesNotExists($handler);
+      $this->onPropertyNotFound($handler);
     }
     public function httpMethodNotImplemented (Request $request, Response $response) {
       $this->httpMethodNotImplementedHandler->call($this, "HTTP method: '$_SERVER[REQUEST_METHOD]' is not implemented for '$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]'", $request, $response);
@@ -135,8 +142,73 @@
       $this->endpointDoesNotExistsHandler->call($this, "Endpoint does not exist for '$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]'", $request, $response);
       exit;
     }
+    public function propertyNotFound (string $message, Request $request, Response $response) {
+      $this->propertyNotFoundHandler->call($this, $message, $request, $response);
+      exit;
+    }
+    
     
     public function setViewDirectory ($directory) {
       $_SERVER["VIEW_DIR"] = $directory;
+    }
+  
+    /**
+     * @var Closure $bodyParser
+     */
+    private $bodyParser;
+    public function setBodyParser (Closure $bodyParser) {
+      $this->bodyParser = $bodyParser;
+    }
+  
+    /**
+     * Parses body as a json object {}, if the main object is array the body will be that array even if `$convertToRegistry` is set to true.
+     *
+     * File upload is only accessible with HTTP POST method and Content-Type: "multipart/form-data" thus when this header is set, the body will automatically become Register object with set values.
+     * @param bool $convertToRegistry
+     * @return Closure
+     */
+    public static function BODY_PARSER_JSON (bool $convertToRegistry = true) {
+      return function ($bodyContents, Request $request) use ($convertToRegistry) {
+        if (!(strpos($request->getHeader("Content-Type"), "multipart/form-data") === false)) {
+          $request->body = new RequestRegistry($request);
+          $request->body->load($_POST);
+          return;
+        }
+        
+        if (!$convertToRegistry) {
+          $request->body = json_decode($bodyContents);
+          return;
+        }
+  
+        $request->body = new RequestRegistry($request);
+        $json = json_decode($bodyContents);
+        if (is_array($json)) {
+          $request->body->set("array", $json);
+          return;
+        }
+        
+        if ($json !== null) {
+          foreach ($json as $key => $value) {
+            $request->body->set($key, $value);
+          }
+        }
+      };
+    }
+    public static function BODY_PARSER_TEXT () {
+      return function ($bodyContents, Request $request) {
+        $request->body = new RequestRegistry($request);
+        $request->body->set("text", $bodyContents);
+      };
+    }
+  
+    /**
+     *
+     * @return Closure
+     */
+    public static function BODY_PARSER_URLENCODED () {
+      return function ($bodyContents, Request $request) {
+        $request->body = new RequestRegistry($request);
+        Request::parseURLEncoded($bodyContents, $request->body);
+      };
     }
   }

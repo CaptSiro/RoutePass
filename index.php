@@ -9,6 +9,7 @@
   $router->onErrorEvent(function (string $message, Request $request, Response $response) {
     $response->render("error", ["message" => $message]);
   });
+  $router->setBodyParser(HomeRouter::BODY_PARSER_TEXT());
 
   
   
@@ -85,10 +86,45 @@
   
   
   $staticRouter = new Router();
-  $staticRouter->post("/", [function () {
-    echo "static domain router";
+  $staticRouter->get("/", [function (Request $request) {
+    echo "static domain router" . $request->query->get("name");
   }]);
   $router->domain("static.$env->HOST", $staticRouter);
+  
+  
+  
+  
+  
+  
+  
+  
+  $bodyParserRouter = new Router();
+  $bodyParserRouter->get("/file-upload", [function (Request $request, Response $response) {
+    $response->render("file-upload");
+  }]);
+  $bodyParserRouter->post("/file-upload", [function (Request $request, Response $response) {
+    var_dump($request);
+    $response->json($request->files->get("file"));
+  }]);
+  $bodyParserRouter->get("/urlencoded", [function (Request $request, Response $response) {
+    $response->render("urlencoded");
+  }]);
+  $bodyParserRouter->post("/urlencoded", [function (Request $request, Response $response) {
+    $response->json($request->body->getMap());
+  }]);
+  $bodyParserRouter->get("/json", [function (Request $request, Response $response) {
+    $response->render("json");
+  }]);
+  $bodyParserRouter->delete("/json", [function (Request $request, Response $response) {
+    $response->json($request->body->getMap());
+  }]);
+  $bodyParserRouter->get("/text", [function (Request $request, Response $response) {
+    $response->render("text");
+  }]);
+  $bodyParserRouter->post("/text", [function (Request $request, Response $response) {
+    $response->json($request->body->getMap());
+  }]);
+  $router->domain("body.localhost", $bodyParserRouter);
   
   
 
