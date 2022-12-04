@@ -178,11 +178,7 @@
           return;
         }
 
-        /**
-         * @var HomeRouter $homeRouter
-         */
-        $homeRouter = $this->getRootParent();
-        $homeRouter->httpMethodNotImplemented($request, $response);
+        $request->homeRouter->httpMethodNotImplemented($request, $response);
       }
 
       $part = array_shift($uri);
@@ -221,11 +217,7 @@
         }
       }
   
-      /**
-       * @var HomeRouter $homeRouter
-       */
-      $homeRouter = $this->getRootParent();
-      $homeRouter->endpointDoesNotExists($request, $response);
+      $request->homeRouter->endpointDoesNotExists($request, $response);
     }
   }
 

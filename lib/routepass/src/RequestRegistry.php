@@ -10,8 +10,7 @@
     }
   
     protected function propNotFound($propertyName) {
-      $this->request->response->setStatusCode(Response::BAD_REQUEST);
-      $this->request->response->error("$propertyName is required for this operation.");
+      $this->request->homeRouter->propertyNotFound("'$propertyName' is required for this operation.", $this->request, $this->request->response);
     }
   
     protected function setValue($propertyName, $value) {

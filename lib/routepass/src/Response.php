@@ -94,6 +94,10 @@
       exit;
     }
     /**
+     * Alias of Response::flush()
+     */
+    public function end () { $this->flush(); }
+    /**
      * Exits the execution.
      *
      * Sends string data to user.
@@ -152,7 +156,7 @@
       );
       $this->readFile($file);
     }
-    
+    //TODO comment about it
     public function render (string $view, $locals = [], $doFlushResponse = true) {
       $viewFile = ($_SERVER["VIEW_DIR"] ?? $_SERVER["HOME_DIR"]) . "/$view.php";
       if (!file_exists($viewFile)) {
@@ -183,4 +187,5 @@
         $this->flush();
       }
     }
+    //TODO Response::redirect
   }
