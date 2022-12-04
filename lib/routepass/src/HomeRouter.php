@@ -77,6 +77,33 @@
       
       $router->setParent($this);
     }
+    public function static (string $urlPattern, string $absoluteDirectoryPath, array $paramCaptureGroupMap = []) {
+      $staticRouter = new Router();
+      $staticRouter->get("/*", [function (Request $request, Response $response) use ($absoluteDirectoryPath) {
+        $filePath = "$absoluteDirectoryPath/$request->remainingURI";
+        if (is_dir($filePath)) {
+          $basenameMapper = function ($item) {
+            return basename($item);
+          };
+          
+          $files = glob("$filePath/*.*");
+          $directories = glob("$filePath/*/");
+          
+          $path = explode("/", $request->remainingURI);
+          
+          $response->renderFile(__DIR__ . "/directory-walker.php", [
+            "home" => $absoluteDirectoryPath,
+            "path" => $path[0] !== "" ? $path : [],
+            "files" => array_map($basenameMapper, $files),
+            "directories" => array_map($basenameMapper, $directories)
+          ]);
+        }
+        $response->setHeader("Content-Type", mime_content_type($filePath));
+        $response->readFile($filePath);
+      }], ["filePath" => Router::REG_ANY]);
+      
+      parent::use($urlPattern, $staticRouter, $paramCaptureGroupMap);
+    }
     public function serve () {
       $home = "";
       $dir = dirname($_SERVER["SCRIPT_FILENAME"]);
@@ -87,7 +114,8 @@
         }
       }
       
-      $_SERVER["HOME_DIR"] = $dir;
+      $_SERVER["HOME_DIR"] = $home;
+      $_SERVER["HOME_DIR_PATH"] = $dir;
       
       $res = new Response();
       $req = new Request($res, $this);

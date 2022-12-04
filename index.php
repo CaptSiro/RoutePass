@@ -10,6 +10,8 @@
     $response->render("error", ["message" => $message]);
   });
   $router->setBodyParser(HomeRouter::BODY_PARSER_TEXT());
+  
+  $router->static("pub", __DIR__ . "/public");
 
   
   

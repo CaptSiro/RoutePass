@@ -73,6 +73,10 @@
       $host,
       $uri,
       $fullURI,
+      /**
+       * @var string $remainingURI
+       */
+      $remainingURI,
       $response,
       $homeRouter,
       $domain,
@@ -100,7 +104,7 @@
           ? "https"
           : "http")
         . "://" . $_SERVER['HTTP_HOST'];
-      $this->uri = $_SERVER["REQUEST_URI"];
+      $this->uri = substr($_SERVER["REQUEST_URI"], strlen($_SERVER["HOME_DIR"]));
       $this->fullURI = "$this->host$this->uri";
   
       $temp = apache_request_headers();

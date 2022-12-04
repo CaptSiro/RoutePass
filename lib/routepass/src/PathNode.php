@@ -73,6 +73,7 @@
      * @var Closure[][]
      */
     public $handles = [];
+    private $redirectAllToHome = false;
   
   
     public function __construct (string $pathPart, Node $parent) {
@@ -122,6 +123,11 @@
       }
 
       $part = array_shift($uriParts);
+      if ($part[0] == "*" && strlen($part) == 1) {
+        $this->redirectAllToHome = true;
+        $this->handles[$httpMethod] = $callbacks;
+        return;
+      }
 
       if (isset($this->static[$part])) {
         $this->static[$part]->assign($httpMethod, $uriParts, $callbacks);
@@ -161,24 +167,7 @@
   
     protected function execute (array &$uri, Request &$request, Response &$response) {
       if (empty($uri)) {
-        if (isset($this->handles[$_SERVER["REQUEST_METHOD"]])) {
-          $doNext = false;
-          $nextFunc = function () use (&$doNext) { $doNext = true; };
-
-          foreach ($this->handles[$_SERVER["REQUEST_METHOD"]] as $cb) {
-            $cb($request, $response, $nextFunc);
-
-            if ($doNext) {
-              $doNext = false;
-              continue;
-            }
-            
-            break;
-          }
-          return;
-        }
-
-        $request->homeRouter->httpMethodNotImplemented($request, $response);
+        $this->callHandlesClosures($request, $response);
       }
 
       $part = array_shift($uri);
@@ -216,8 +205,36 @@
           exit;
         }
       }
+      
+      if ($this->redirectAllToHome) {
+        $request->remainingURI = "$part" . (count($uri) == 0 ? "" : ("/" . join("/", $uri)));
+        $this->callHandlesClosures($request, $response);
+      }
   
       $request->homeRouter->endpointDoesNotExists($request, $response);
+    }
+    
+    
+    
+    private function callHandlesClosures (Request $request, Response $response) {
+      if (isset($this->handles[$_SERVER["REQUEST_METHOD"]])) {
+        $doNext = false;
+        $nextFunc = function () use (&$doNext) { $doNext = true; };
+    
+        foreach ($this->handles[$_SERVER["REQUEST_METHOD"]] as $cb) {
+          $cb($request, $response, $nextFunc);
+      
+          if ($doNext) {
+            $doNext = false;
+            continue;
+          }
+      
+          break;
+        }
+        return;
+      }
+  
+      $request->homeRouter->httpMethodNotImplemented($request, $response);
     }
   }
 
