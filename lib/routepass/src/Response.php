@@ -138,6 +138,7 @@
         $this->error("File not found: $file");
       }
   
+      $this->generateHeaders();
       readfile($file);
       exit;
     }
@@ -157,32 +158,51 @@
       $this->readFile($file);
     }
     //TODO comment about it
-    public function render (string $view, $locals = [], $doFlushResponse = true) {
-      $viewFile = ($_SERVER["VIEW_DIR"] ?? $_SERVER["HOME_DIR"]) . "/$view.php";
-      if (!file_exists($viewFile)) {
+    public function render (string $view, array $locals = [], $doFlushResponse = true) {
+      $this->renderFile(
+        ($_SERVER["VIEW_DIR"] ?? $_SERVER["HOME_DIR_PATH"]) . "/$view.php",
+        $locals,
+        $doFlushResponse
+      );
+    }
+    
+    public function renderFile (string $filePath, array $locals = [], $doFlushResponse = true) {
+      if (!file_exists($filePath)) {
         $this->setStatusCode(self::NOT_FOUND);
-        $this->error("Could not find view: $viewFile");
+        $this->error("Could not find view: $filePath");
       }
-      
+  
       $predefined = [];
+      $predefinedGlobal = [];
       foreach ($locals as $name => $value) {
         if (isset($$name)) {
           $predefined[$name] = $value;
         }
-        
+    
         $$name = $value;
+        
+        if (isset($GLOBALS[$home])) {
+          $predefinedGlobal[$name] = $value;
+        }
+        
+        $GLOBALS[$name] = $value;
       }
-      
-      require $viewFile;
-      
+  
+      require $filePath;
+  
       foreach ($locals as $name => $value) {
         unset($$name);
+        unset($GLOBALS[$name]);
       }
-      
+  
       foreach ($predefined as $name => $value) {
         $$name = $value;
       }
-      
+  
+      foreach ($predefinedGlobal as $name => $value) {
+        $GLOBALS[$name] = $value;
+      }
+  
       if ($doFlushResponse) {
         $this->flush();
       }
