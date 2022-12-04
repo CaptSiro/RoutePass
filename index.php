@@ -103,8 +103,7 @@
     $response->render("file-upload");
   }]);
   $bodyParserRouter->post("/file-upload", [function (Request $request, Response $response) {
-    var_dump($request);
-    $response->json($request->files->get("file"));
+    $response->json($request->body->getMap());
   }]);
   $bodyParserRouter->get("/urlencoded", [function (Request $request, Response $response) {
     $response->render("urlencoded");

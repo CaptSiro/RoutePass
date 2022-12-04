@@ -17,10 +17,14 @@
     button.addEventListener("click", async evt => {
       const formData = new FormData();
       formData.set("file", fileInput.files[0]);
+      formData.set("name", "GYZE");
+      formData.set("pepeW", "Did you say The Deceit?!");
+      
       const response = await fetch("/routing/file-upload", {
         body: formData,
         method: "POST",
       });
+      
       const json = await response.text();
       document.body.innerHTML = json;
     });

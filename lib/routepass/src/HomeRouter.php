@@ -164,23 +164,19 @@
      * Parses body as a json object {}, if the main object is array the body will be that array even if `$convertToRegistry` is set to true.
      *
      * File upload is only accessible with HTTP POST method and Content-Type: "multipart/form-data" thus when this header is set, the body will automatically become Register object with set values.
-     * @param bool $convertToRegistry
+     *
+     * If array is sent, it is stored under "array" property on body object, use this to access it: `$request->body->get("array")`
      * @return Closure
      */
-    public static function BODY_PARSER_JSON (bool $convertToRegistry = true) {
-      return function ($bodyContents, Request $request) use ($convertToRegistry) {
+    public static function BODY_PARSER_JSON () {
+      return function ($bodyContents, Request $request) {
+        $request->body = new RequestRegistry($request);
+
         if (!(strpos($request->getHeader("Content-Type"), "multipart/form-data") === false)) {
-          $request->body = new RequestRegistry($request);
           $request->body->load($_POST);
           return;
         }
-        
-        if (!$convertToRegistry) {
-          $request->body = json_decode($bodyContents);
-          return;
-        }
   
-        $request->body = new RequestRegistry($request);
         $json = json_decode($bodyContents);
         if (is_array($json)) {
           $request->body->set("array", $json);
@@ -194,20 +190,41 @@
         }
       };
     }
+  
+    /**
+     * Parses body as text. Stored under "text" property on body object, use this to access it: `$request->body->get("text")`
+     * @return Closure
+     */
     public static function BODY_PARSER_TEXT () {
       return function ($bodyContents, Request $request) {
         $request->body = new RequestRegistry($request);
+  
+        if (!(strpos($request->getHeader("Content-Type"), "multipart/form-data") === false) && !empty($_POST)) {
+          foreach ($_POST as $key => $value) {
+            $bodyContents .= urlencode($key) . "=" . urlencode($value) . "&";
+          }
+          $bodyContents = substr($bodyContents, 0, -1);
+        }
+        
         $request->body->set("text", $bodyContents);
       };
     }
   
     /**
+     * Parses body as urlencoded string and its entries are stored as properties on body object.
      *
+     * If Content-Type header contains multipart/form-data (file upload) the remaining entries will be parsed as urlencoded string. You may use `Request::parseURLEncoded($request->body->get("text"), $request->body)` to populate the `$request->body` registry with key-value pairs.
      * @return Closure
      */
     public static function BODY_PARSER_URLENCODED () {
       return function ($bodyContents, Request $request) {
         $request->body = new RequestRegistry($request);
+        
+        if (!(strpos($request->getHeader("Content-Type"), "multipart/form-data") === false)) {
+          $request->body->load($_POST);
+          return;
+        }
+        
         Request::parseURLEncoded($bodyContents, $request->body);
       };
     }
