@@ -91,7 +91,7 @@
      */
     public function flush () {
       $this->generateHeaders();
-      exit;
+      exit();
     }
     /**
      * Alias of Response::flush()
@@ -103,8 +103,8 @@
      * Sends string data to user.
      */
     public function send ($text) {
-      $this->generateHeaders();
-      exit($text);
+      echo $text;
+      $this->flush();
     }
     /**
      * Exits the execution.
@@ -112,8 +112,8 @@
      * Parses object into JSON text representation and sends it to the user.
      */
     public function json ($jsonEncodeAble, $jsonEncodeFlags = 0, $jsonEncodeDepth = 512) {
-      $this->generateHeaders();
-      exit(json_encode($jsonEncodeAble, $jsonEncodeFlags, $jsonEncodeDepth));
+      echo(json_encode($jsonEncodeAble, $jsonEncodeFlags, $jsonEncodeDepth));
+      $this->flush();
     }
     /**
      * Exits the execution with error code and message.
@@ -134,13 +134,11 @@
      */
     public function readFile (string $file) {
       if (!file_exists($file)) {
-        $this->setStatusCode(self::NOT_FOUND);
-        $this->error("File not found: $file");
+        $this->error("RequestFile not found: $file", self::NOT_FOUND);
       }
   
-      $this->generateHeaders();
       readfile($file);
-      exit;
+      $this->flush();
     }
     /**
      * Exits the execution.
@@ -149,7 +147,7 @@
      */
     public function download (string $file) {
       $this->setAllHeaders(
-        ["Content-Description", "File Transfer"],
+        ["Content-Description", "RequestFile Transfer"],
         ["Content-Type", 'application/octet-stream'],
         ["Content-Disposition", "attachment; filename=" . basename($file)],
         ["Pregma", "public"],
@@ -157,55 +155,92 @@
       );
       $this->readFile($file);
     }
-    //TODO comment about it
-    public function render (string $view, array $locals = [], $doFlushResponse = true) {
+  
+    /**
+     * Wrapper for renderFile where file is path to the view. If view directory is not set projects directory will be used instead. Use whole path to the view file: "path/to/the/view" without extension.
+     *
+     * @param string $view
+     * @param array $locals
+     * @param string $extension
+     * @param bool $doFlushResponse
+     * @return void
+     */
+    public function render (string $view, array $locals = [], string $extension = "php", bool $doFlushResponse = true) {
       $this->renderFile(
-        ($_SERVER["VIEW_DIR"] ?? $_SERVER["HOME_DIR_PATH"]) . "/$view.php",
+        ($_SERVER["VIEW_DIR"] ?? $_SERVER["HOME_DIR_PATH"]) . "/$view.$extension",
         $locals,
         $doFlushResponse
       );
     }
-    
-    public function renderFile (string $filePath, array $locals = [], $doFlushResponse = true) {
+  
+    /**
+     * Reads file and sets local variables to the file. Key values will be used as name of the variable.
+     *
+     * $locals = ["number" => 8]
+     *   -> accessible with '$number' and $GLOBALS["number"]
+     * @param string $filePath
+     * @param array $locals
+     * @param bool $doFlushResponse
+     * @return void
+     */
+    public function renderFile (string $filePath, array $locals = [], bool $doFlushResponse = true) {
       if (!file_exists($filePath)) {
-        $this->setStatusCode(self::NOT_FOUND);
-        $this->error("Could not find view: $filePath");
+        $this->error("Could not find view: $filePath", self::NOT_FOUND);
       }
   
       $predefined = [];
       $predefinedGlobal = [];
-      foreach ($locals as $name => $value) {
-        if (isset($$name)) {
-          $predefined[$name] = $value;
+      foreach ($locals as $_______name_prefix_will_be_never_used => $value) {
+        if (isset($$_______name_prefix_will_be_never_used)) {
+          $predefined[$_______name_prefix_will_be_never_used] = $value;
         }
     
-        $$name = $value;
+        $$_______name_prefix_will_be_never_used = $value;
         
-        if (isset($GLOBALS[$home])) {
-          $predefinedGlobal[$name] = $value;
+        if (isset($GLOBALS[$_______name_prefix_will_be_never_used])) {
+          $predefinedGlobal[$_______name_prefix_will_be_never_used] = $value;
         }
         
-        $GLOBALS[$name] = $value;
+        $GLOBALS[$_______name_prefix_will_be_never_used] = $value;
       }
   
       require $filePath;
   
-      foreach ($locals as $name => $value) {
-        unset($$name);
-        unset($GLOBALS[$name]);
+      foreach ($locals as $_______name_prefix_will_be_never_used => $value) {
+        unset($$_______name_prefix_will_be_never_used);
+        unset($GLOBALS[$_______name_prefix_will_be_never_used]);
       }
   
-      foreach ($predefined as $name => $value) {
-        $$name = $value;
+      foreach ($predefined as $_______name_prefix_will_be_never_used => $value) {
+        $$_______name_prefix_will_be_never_used = $value;
       }
   
-      foreach ($predefinedGlobal as $name => $value) {
-        $GLOBALS[$name] = $value;
+      foreach ($predefinedGlobal as $_______name_prefix_will_be_never_used => $value) {
+        $GLOBALS[$_______name_prefix_will_be_never_used] = $value;
       }
   
       if ($doFlushResponse) {
         $this->flush();
       }
     }
-    //TODO Response::redirect
+  
+  
+    /**
+     * Redirects request to new URL.
+     *
+     * Do prepend home directory is used to dynamically prepend directory structure that is between server directory and this project's directory.
+     *
+     * www/ **my-project** /index.php -> localhost/ **my-project** / **'/my-project'** will be prepended
+     *
+     * `/api/user` -> `/my-project/api/user`
+     *
+     *
+     * @param string $url accepts same URLs as Location header.
+     * @param bool $doPrependHomeDirectory
+     * @return void
+     */
+    public function redirect (string $url, bool $doPrependHomeDirectory = true) {
+      $this->setHeader("Location", ($doPrependHomeDirectory ? $_SERVER["HOME_DIR"] : "") .  $url);
+      $this->flush();
+    }
   }

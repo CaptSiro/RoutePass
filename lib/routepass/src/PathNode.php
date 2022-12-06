@@ -229,6 +229,10 @@
             continue;
           }
       
+          if ($request->homeRouter->getFlag(HomeRouter::FLAG_RESPONSE_AUTO_FLUSH)) {
+            $response->flush();
+          }
+          
           break;
         }
         return;

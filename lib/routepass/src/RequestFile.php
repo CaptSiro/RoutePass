@@ -1,6 +1,6 @@
 <?php
   
-  class File {
+  class RequestFile {
     public $name, $ext, $fullName, $type, $temporaryName, $error, $size;
     
     public function __construct ($file) {

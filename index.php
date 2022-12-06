@@ -24,7 +24,7 @@
   $userRouter->get("/:id[]", [function (Request $req) {
     var_dump($req->param->get("id"));
     exit;
-  }], ["id" => Router::REG_NUMBER]);
+  }], ["id" => Router::REGEX_NUMBER]);
   
   $userRouter->get("/static", [function () {
     echo "/home/user/static";
@@ -37,11 +37,11 @@
   $router->get("/book/:bookID\\book", [function ($req, $res) {
     echo("Getting book: " . $req->param->get("bookID"));
     exit;
-  }], ["bookID" => Router::REG_NUMBER]);
+  }], ["bookID" => Router::REGEX_NUMBER]);
 
   $router->get("/files/:fileName", [function ($req, $res) {
     echo("getting file: " . $req->param->get("fileName"));
-  }], ["fileName" => Router::REG_ANY]);
+  }], ["fileName" => Router::REGEX_ANY]);
   
   $router->get("/", [function (Request $request, Response $response) {
     $response->render("index", ["name" => "John"]);
@@ -49,15 +49,15 @@
   
   $router->for(["GET", "POST"],"/for/:name:id/static", [function (Request $req) {
     echo $req->param->get("name") . ":" . $req->param->get("id") . " hello! (for)";
-  }], ["name" => Router::REG_WORD, "id" => Router::REG_NUMBER]);
+  }], ["name" => Router::REGEX_WORD, "id" => Router::REGEX_NUMBER]);
   
   $router->forAll("/all/:name:id/static", [function (Request $req) {
     echo $req->param->get("name") . ":" . $req->param->get("id") . " hello! (all)";
-  }], ["name" => Router::REG_WORD, "id" => Router::REG_NUMBER]);
+  }], ["name" => Router::REGEX_WORD, "id" => Router::REGEX_NUMBER]);
   
   
 
-  $router->use("/:name-:id[]", $userRouter, ["id" => Router::REG_NUMBER]);
+  $router->use("/:name-:id[]", $userRouter, ["id" => Router::REGEX_NUMBER]);
   
   
   
@@ -65,8 +65,9 @@
   
   $userDomainRouter = new Router();
   
-  $userDomainRouter->get("/", [function (Request $req) {
+  $userDomainRouter->get("/", [function (Request $req, Response $response) {
     echo "domain: " . $req->domain->get("user");
+    $response->flush();
   }]);
   
   $userDomainRouter->get(
@@ -75,21 +76,22 @@
       echo "<strong>" . $req->domain->get("user") . "</strong> getting post: <strong>" . $req->param->get("post") . "</strong> page(" . $req->param->get("page") . ")";
     }],
     [
-      "post" => Router::REG_SENTENCE_LOWER,
-      "page" => Router::REG_NUMBER
+      "post" => Router::REGEX_SENTENCE_LOWER,
+      "page" => Router::REGEX_NUMBER
     ]
   );
   
   $env = new Env(__DIR__ . "/.env");
-  $router->domain("[user].$env->HOST", $userDomainRouter, ["user" => Router::REG_WORD_LOWER]);
+  $router->domain("[user].$env->HOST", $userDomainRouter, ["user" => Router::REGEX_WORD_LOWER]);
   
   
   
   
   
   $staticRouter = new Router();
-  $staticRouter->get("/", [function (Request $request) {
+  $staticRouter->get("/", [function (Request $request, Response $response) {
     echo "static domain router" . $request->query->get("name");
+    $response->flush();
   }]);
   $router->domain("static.$env->HOST", $staticRouter);
   
@@ -128,6 +130,13 @@
   $router->domain("body.localhost", $bodyParserRouter);
   
   
+  
+  $router->get("/redirect", [function (Request $request, Response $response) {
+    $response->redirect("/redirect/destination");
+  }]);
+  $router->get("/redirect/destination", [function (Request $request, Response $response) {
+    $response->send("You ve come to the right place.");
+  }]);
 
   
   

@@ -2,7 +2,7 @@
   
   require_once __DIR__ . "/WriteRegistry.php";
   require_once __DIR__ . "/Cookie.php";
-  require_once __DIR__ . "/File.php";
+  require_once __DIR__ . "/RequestFile.php";
 
   class Request {
     static function POST ($url, array $post = NULL, array $options = []) {
@@ -135,7 +135,7 @@
       
       $this->files = new RequestRegistry($this);
       foreach ($_FILES as $key => $file) {
-        $this->files->set($key, new File($file));
+        $this->files->set($key, new RequestFile($file));
       }
       
       $this->param = new RequestRegistry($this);

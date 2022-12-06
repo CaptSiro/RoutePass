@@ -29,11 +29,25 @@
       $this->setBodyParser(self::BODY_PARSER_URLENCODED());
     }
   
-    
-    
-    // [domain].host
-    // static.host
-    public function domain (string $domainPattern, Router $router, $domainCaptureGroupMap = []) {
+  
+    /**
+     * Set Router object to specific domain format.
+     *
+     * ### Domain format
+     *
+     * Static domains
+     * - users.example.com
+     *
+     * Dynamic domains
+     * - [mySubDomain].example.com
+     * - mySubDomain is accessible within `$request->domain->get("mySubDomain")`
+     * - Regular expression can be added to dynamic domain parameter by passing map of keys (names of domains) and values (regex capture group /(0-9)/)
+     * @param string $domainPattern
+     * @param Router $router
+     * @param array $domainCaptureGroupMap
+     * @return void
+     */
+    public function domain (string $domainPattern, Router $router, array $domainCaptureGroupMap = []) {
       if (strpos($domainPattern, "[") === false) {
         // static domain
         $this->staticDomains[$domainPattern] = $router;
@@ -100,7 +114,7 @@
         }
         $response->setHeader("Content-Type", mime_content_type($filePath));
         $response->readFile($filePath);
-      }], ["filePath" => Router::REG_ANY]);
+      }], ["filePath" => Router::REGEX_ANY]);
       
       parent::use($urlPattern, $staticRouter, $paramCaptureGroupMap);
     }
@@ -179,6 +193,28 @@
     public function setViewDirectory ($directory) {
       $_SERVER["VIEW_DIR"] = $directory;
     }
+    
+    private $flags = [
+      self::FLAG_RESPONSE_AUTO_FLUSH => true
+    ];
+    
+    
+    /**
+     * When callback is called and next function is not called the response will be automatically sent.
+     *
+     * Expected value type: boolean
+     *
+     * Default: true
+     */
+    public const FLAG_RESPONSE_AUTO_FLUSH = "DO_RESPONSE_AUTO_FLUSH";
+    
+    
+    public function setFlag ($flag, $value) {
+      $this->flags[$flag] = $value;
+    }
+    public function getFlag ($flag) {
+      return $this->flags[$flag] ?: null;
+    }
   
     /**
      * @var Closure $bodyParser
@@ -191,7 +227,7 @@
     /**
      * Parses body as a json object {}, if the main object is array the body will be that array even if `$convertToRegistry` is set to true.
      *
-     * File upload is only accessible with HTTP POST method and Content-Type: "multipart/form-data" thus when this header is set, the body will automatically become Register object with set values.
+     * RequestFile upload is only accessible with HTTP POST method and Content-Type: "multipart/form-data" thus when this header is set, the body will automatically become Register object with set values.
      *
      * If array is sent, it is stored under "array" property on body object, use this to access it: `$request->body->get("array")`
      * @return Closure
