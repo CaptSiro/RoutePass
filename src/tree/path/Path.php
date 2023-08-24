@@ -31,6 +31,27 @@ class Path {
 
 
 
+    private int $index = 0;
+
+    function hasNext(): bool {
+        return isset($this->segments[$this->index]);
+    }
+
+
+
+    function next(): Segment {
+        $this->index++;
+        return $this->segments[$this->index - 1];
+    }
+
+
+
+    function rewind(): void {
+        $this->index = 0;
+    }
+
+
+
     static function fromRaw(array $segments): self {
         $p = new self();
 
