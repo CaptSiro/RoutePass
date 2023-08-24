@@ -1,6 +1,6 @@
 <?php
 
-namespace RoutePass\tree\handler;
+namespace RoutePass\handler;
 
 readonly class Handler {
     private array $handles;

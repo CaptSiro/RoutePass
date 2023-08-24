@@ -1,7 +1,6 @@
 <?php
 
-
-namespace RoutePass\tree\handler;
+namespace RoutePass\handler;
 
 use Closure;
 

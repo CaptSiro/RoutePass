@@ -1,18 +1,16 @@
 <?php
 
-namespace RoutePass\tree;
+namespace RoutePass;
 
-use RoutePass\tree\handler\Handler;
+use RoutePass\handler\Handler;
+use RoutePass\tree\Node;
 use RoutePass\tree\path\parser\Parser;
 use RoutePass\tree\traversable\Traversable;
-use RoutePass\tree\traversable\TraversableTrait;
+use function RoutePass\tree\traversable\walk;
+
+require_once __DIR__ . "/tree/traversable/Traversable.php";
 
 readonly class Router implements Traversable {
-    use TraversableTrait;
-
-
-
-
     private Node $node;
 
 
@@ -43,5 +41,13 @@ readonly class Router implements Traversable {
         array_unshift($handlers, $handler);
 
         $node->assign($handlers);
+    }
+
+
+
+    function execute(string $path, string $httpMethod) {
+        $node = walk($this->node, Parser::parse($path));
+
+
     }
 }

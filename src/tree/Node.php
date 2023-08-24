@@ -2,19 +2,13 @@
 
 namespace RoutePass\tree;
 
-use RoutePass\tree\handler\Handler;
+use RoutePass\handler\Handler;
 use RoutePass\tree\path\Segment;
 use RoutePass\tree\traversable\Traversable;
-use RoutePass\tree\traversable\TraversableTrait;
 
 require_once __DIR__ . "/traversable/Traversable.php";
-require_once __DIR__ . "/traversable/TraversableTrait.php";
 
 class Node implements Traversable {
-    use TraversableTrait;
-
-
-
     private Segment $segment;
     /** @var Traversable[] $nodes */
     private array $nodes;

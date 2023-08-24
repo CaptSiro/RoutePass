@@ -1,11 +1,10 @@
 <?php
 
-use RoutePass\tree\path\parser\Parser;
-use function RoutePass\tree\handler\get;
-use function RoutePass\tree\handler\post;
+use RoutePass\Router;
+use function RoutePass\handler\get;
+use function RoutePass\handler\post;
 use function sptf\functions\expect;
 use function sptf\functions\test;
-use RoutePass\tree\Router;
 
 
 

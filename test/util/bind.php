@@ -1,12 +1,13 @@
 <?php
 
-use RoutePass\tree\handler\Handler;
+use RoutePass\handler\Handler;
+use RoutePass\Router;
 use RoutePass\tree\path\parser\Parser;
-use RoutePass\tree\Router;
-use function RoutePass\tree\handler\get;
-use function RoutePass\tree\handler\post;
-use function sptf\functions\fail;
+use function RoutePass\handler\get;
+use function RoutePass\handler\post;
+use function RoutePass\tree\traversable\walk;
 use function sptf\functions\expect;
+use function sptf\functions\fail;
 
 function bind(string $path, Handler ...$handlers): Router {
     if (empty($handlers)) {
@@ -20,7 +21,7 @@ function bind(string $path, Handler ...$handlers): Router {
 
     $r->bind($path, ...$handlers);
 
-    $node = $r->walk(Parser::parse($path), $r->getNode());
+    $node = walk($r->getNode(), Parser::parse($path));
 
     if ($node === null) {
         fail("Failed to find node for path: '$path'");
