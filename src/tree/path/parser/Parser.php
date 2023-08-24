@@ -67,10 +67,6 @@ class Parser {
             }
         }
 
-        if (empty($p->getSegments())) {
-            throw new Exception("Path must include at least one segment");
-        }
-
         return $p;
     }
 }

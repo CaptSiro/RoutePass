@@ -42,6 +42,26 @@ test("tokenize path /u/id-[id]", function () {
 
 
 
+test("parse self-referencing paths", function () {
+    $paths = ["", "/"];
+
+    $final = Path::fromRaw([]);
+    $compare = fn(Path $a, Path $b) => Path::compare($a, $b);
+
+    foreach ($paths as $path) {
+        try {
+            $p = Parser::parse($path);
+
+            expect($p)->toBe($final)->compare($compare);
+        } catch (Exception) {
+            fail("Should have parsed path: '$path'");
+            continue;
+        }
+    }
+});
+
+
+
 test("parse paths", function () {
     $path = "/u/id-[id][\\user-name_~]/";
     $final = Path::fromRaw([
@@ -69,7 +89,7 @@ test("parse paths", function () {
 
 
 test("fail parsing", function () {
-    $paths = ["", "/", "/u//", "//", "///", "[a", "b]", "[a[b]]", "[/]"];
+    $paths = ["/u//", "//", "///", "[a", "b]", "[a[b]]", "[/]"];
 
     foreach ($paths as $path) {
         try {
