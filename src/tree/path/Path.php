@@ -3,16 +3,8 @@
 namespace RoutePass\tree\path;
 
 class Path {
+    /** @var Segment[] $segments */
     private array $segments;
-
-
-
-    /**
-     * @return array
-     */
-    public function getSegments(): array {
-        return $this->segments;
-    }
 
 
 
@@ -23,10 +15,26 @@ class Path {
 
 
     /**
-     * @param array $sections
+     * @return Segment[]
      */
+    public function getSegments(): array {
+        return $this->segments;
+    }
+
+
+
     public function addSegment(Segment $section): void {
         $this->segments[] = $section;
+    }
+
+
+
+    function param(string $name, string $regex): self {
+        foreach ($this->segments as $segment) {
+            $segment->setParam($name, $regex);
+        }
+
+        return $this;
     }
 
 
@@ -59,7 +67,7 @@ class Path {
             $s = new Segment();
 
             foreach ($parts as $part) {
-                $s->add(new Part(...$part));
+                $s->addPart(new Part(...$part));
             }
 
             $p->addSegment($s);

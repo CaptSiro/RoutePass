@@ -63,7 +63,7 @@ test("parse self-referencing paths", function () {
 
 
 test("parse paths", function () {
-    $path = "/u/id-[id][\\user-name_~]/";
+    $path = "/u/id-[id][user_name]/";
     $final = Path::fromRaw([
         [
             [PartType::STATIC, "u"]
@@ -71,14 +71,14 @@ test("parse paths", function () {
         [
             [PartType::STATIC, "id-"],
             [PartType::DYNAMIC, "id"],
-            [PartType::DYNAMIC, "\\user-name_~"],
+            [PartType::DYNAMIC, "user_name"],
         ]
     ]);
 
     try {
         $p = Parser::parse($path);
-    } catch (Exception) {
-        fail("path is valid");
+    } catch (Exception $e) {
+        fail("Path is valid: ". $e->getMessage());
         return;
     }
 
@@ -100,5 +100,44 @@ test("fail parsing", function () {
         }
 
         fail("Should have failed parsing path: '$path'");
+    }
+});
+
+
+
+test("bind parameters", function () {
+    $pass = true;
+    $params = [
+        "a" => "/\d/",
+        "b" => "/[bca]+/",
+        "c" => "/[0-9]+/",
+    ];
+
+    try {
+        $path = Parser::parse("/[a]/b-[b]/c-[c]-c");
+
+        foreach ($params as $name => $value) {
+            $path->param($name, $value);
+        }
+
+        foreach ($path->getSegments() as $segment) {
+            foreach ($segment->getParts() as $part) {
+                foreach ($params as $name => $value) {
+                    if ($part->type === PartType::DYNAMIC
+                        && $part->literal === $name
+                        && $part->pattern !== $value) {
+                        fail("Parameter of name '$name' must have pattern $value");
+                        $pass = false;
+                    }
+                }
+            }
+        }
+    } catch (Exception $e) {
+        fail($e->getMessage());
+        $pass = false;
+    }
+
+    if ($pass) {
+        pass();
     }
 });
