@@ -30,13 +30,19 @@ class Parser {
                         throw new Exception("Illegal token '$literal'");
                     }
 
-                    $segment->add(new Part(PartType::DYNAMIC, $tokens[$pos + 1]->literal));
+                    $ident = $tokens[$pos + 1]->literal;
+
+                    if (!Ident::validate($ident)) {
+                        throw new Exception("'$ident' is not valid parameter name");
+                    }
+
+                    $segment->addPart(new Part(PartType::DYNAMIC, $ident));
                     $pos += 2;
                     break;
                 }
 
                 case TokenType::IDENT: {
-                    $segment->add(new Part(PartType::STATIC, $tokens[$pos]->literal));
+                    $segment->addPart(new Part(PartType::STATIC, $tokens[$pos]->literal));
                     break;
                 }
 
