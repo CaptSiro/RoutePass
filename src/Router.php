@@ -3,10 +3,13 @@
 namespace RoutePass;
 
 use RoutePass\handler\Handler;
+use RoutePass\request\structs\URL;
 use RoutePass\tree\Node;
 use RoutePass\tree\path\parser\Parser;
+use RoutePass\tree\path\Path;
+use RoutePass\tree\path\Segment;
+use RoutePass\tree\traversable\MatchStack;
 use RoutePass\tree\traversable\Traversable;
-use function RoutePass\tree\traversable\walk;
 
 require_once __DIR__ . "/tree/traversable/Traversable.php";
 
@@ -30,8 +33,10 @@ readonly class Router implements Traversable {
 
 
 
-    function bind(string $path, Handler $handler, Handler ...$handlers): void {
-        $parsedPath = Parser::parse($path);
+    function bind(Path|string $path, Handler $handler, Handler ...$handlers): void {
+        $parsedPath = $path instanceof Path
+            ? $path
+            : Parser::parse($path);
 
         $node = $this->node;
         while ($parsedPath->hasNext()) {
@@ -45,9 +50,7 @@ readonly class Router implements Traversable {
 
 
 
-    function execute(string $path, string $httpMethod) {
-        $node = walk($this->node, Parser::parse($path));
-
-
+    function search(array $segments, int $current, MatchStack $stack, array &$out): void {
+        $this->node->search($segments, $current, $stack, $out);
     }
 }

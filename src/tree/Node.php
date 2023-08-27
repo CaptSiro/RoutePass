@@ -4,6 +4,8 @@ namespace RoutePass\tree;
 
 use RoutePass\handler\Handler;
 use RoutePass\tree\path\Segment;
+use RoutePass\tree\traversable\FoundNode;
+use RoutePass\tree\traversable\MatchStack;
 use RoutePass\tree\traversable\Traversable;
 
 require_once __DIR__ . "/traversable/Traversable.php";
@@ -59,6 +61,27 @@ class Node implements Traversable {
         }
 
         return null;
+    }
+
+
+
+    function search(array $segments, int $current, MatchStack $stack, array &$out): void {
+        if (Segment::isLast($segments, $current)) {
+            $out[] = new FoundNode($stack->merge(), $this);
+            return;
+        }
+
+        $next = Segment::next($segments, $current);
+
+        foreach ($this->nodes as $n) {
+            $result = $n->getNode()->getSegment()->test($segments[$current]);
+
+            if ($result->hasPassed) {
+                $stack->push($result->matches);
+                $n->search($segments, $next, $stack, $out);
+                $stack->pop();
+            }
+        }
     }
 
 

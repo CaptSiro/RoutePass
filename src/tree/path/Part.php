@@ -8,7 +8,7 @@ class Part {
     public function __construct(
         public readonly PartType $type,
         public readonly string $literal,
-        public string $pattern = "(.*)"
+        public string $pattern = ".+"
     ) {}
 
 
@@ -17,5 +17,15 @@ class Part {
         return $a->type === $b->type
             && $a->literal === $b->literal
             && $a->pattern === $b->pattern;
+    }
+
+
+
+    function pattern(): string {
+        if ($this->type === PartType::STATIC) {
+            return $this->literal;
+        }
+
+        return "(?<$this->literal>$this->pattern)";
     }
 }

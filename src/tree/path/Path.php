@@ -2,6 +2,8 @@
 
 namespace RoutePass\tree\path;
 
+use RoutePass\tree\path\parser\Parser;
+
 class Path {
     /** @var Segment[] $segments */
     private array $segments;
@@ -40,6 +42,8 @@ class Path {
 
 
     private int $index = 0;
+
+
 
     function hasNext(): bool {
         return isset($this->segments[$this->index]);
@@ -96,4 +100,8 @@ class Path {
 
         return true;
     }
+}
+
+function path(string $path): Path {
+    return Parser::parse($path);
 }
