@@ -1,6 +1,6 @@
 <?php
 
-use RoutePass\structs\URL;
+use RoutePass\request\structs\URL;
 use function sptf\functions\expect;
 use function sptf\functions\test;
 

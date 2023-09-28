@@ -1,6 +1,7 @@
 <?php
 
 use RoutePass\tree\path\parser\Ident;
+use function sptf\functions\pass;
 use function sptf\functions\test;
 use function sptf\functions\fail;
 

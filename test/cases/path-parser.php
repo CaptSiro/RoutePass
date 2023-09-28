@@ -9,6 +9,7 @@ use RoutePass\tree\path\parser\TokenType;
 use RoutePass\tree\path\PartType;
 use RoutePass\tree\path\Path;
 use function sptf\functions\expect;
+use function sptf\functions\pass;
 use function sptf\functions\test;
 use function sptf\functions\fail;
 
