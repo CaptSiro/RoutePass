@@ -2,12 +2,17 @@
 
 namespace RoutePass\structs;
 
+use RoutePass\map\StrictMap;
+use RoutePass\RoutePass;
+use RoutePass\RoutePassError;
+
 readonly class URL {
     function __construct(
         private string $protocol,
         private string $host,
         private string $path,
-        private string $query
+        private string $queryString,
+        public StrictMap $query
     ) {}
 
 
@@ -33,8 +38,8 @@ readonly class URL {
     /**
      * @return string
      */
-    public function getQuery(): string {
-        return $this->query;
+    public function getQueryString(): string {
+        return $this->queryString;
     }
 
 
@@ -62,6 +67,15 @@ readonly class URL {
             $path = substr($path, 0, $queryStart);
         }
 
-        return new self($_SERVER['REQUEST_SCHEME'], $_SERVER['HTTP_HOST'], $path, $_SERVER['QUERY_STRING']);
+        return new self(
+            $_SERVER['REQUEST_SCHEME'],
+            $_SERVER['HTTP_HOST'],
+            $path,
+            $_SERVER['QUERY_STRING'],
+            new StrictMap(
+                fn (string $name) => RoutePass::throwError(RoutePassError::PROP_NOT_FOUND, "Could not find '$name' in query"),
+                $_GET
+            )
+        );
     }
 }
